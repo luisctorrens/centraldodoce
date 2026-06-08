@@ -96,6 +96,19 @@ function showDeleteModal(msg, onConfirm) {
     document.getElementById('delete-modal').classList.add('active');
 }
 
+function applyTableCellLabels(tableSelector) {
+    const table = document.querySelector(tableSelector);
+    if (!table) return;
+
+    const labels = Array.from(table.querySelectorAll('thead th')).map(th => th.textContent.trim());
+    table.querySelectorAll('tbody tr').forEach(row => {
+        if (row.classList.contains('empty-row')) return;
+        row.querySelectorAll('td').forEach((td, index) => {
+            td.setAttribute('data-label', labels[index] || '');
+        });
+    });
+}
+
 // ============================================================
 // LOGIN
 // ============================================================
@@ -117,12 +130,15 @@ document.getElementById('login-form').addEventListener('submit', e => {
 document.getElementById('toggle-password').addEventListener('click', () => {
     const inp  = document.getElementById('password');
     const icon = document.getElementById('toggle-icon');
+    const btn  = document.getElementById('toggle-password');
     if (inp.type === 'password') {
         inp.type = 'text';
         icon.classList.replace('fa-eye', 'fa-eye-slash');
+        btn.setAttribute('aria-label', 'Ocultar senha');
     } else {
         inp.type = 'password';
         icon.classList.replace('fa-eye-slash', 'fa-eye');
+        btn.setAttribute('aria-label', 'Mostrar senha');
     }
 });
 
@@ -154,14 +170,36 @@ document.querySelectorAll('.nav-item[data-screen]').forEach(item => {
     });
 });
 
-document.getElementById('menu-toggle').addEventListener('click', () => {
-    document.getElementById('sidebar').classList.toggle('active');
+const menuToggle = document.getElementById('menu-toggle');
+const sidebar = document.getElementById('sidebar');
+
+menuToggle.addEventListener('click', () => {
+    const isOpen = sidebar.classList.toggle('active');
+    menuToggle.setAttribute('aria-expanded', String(isOpen));
+    menuToggle.setAttribute('aria-label', isOpen ? 'Fechar menu' : 'Abrir menu');
 });
 
 function closeSidebar() {
-    if (window.innerWidth <= 768)
-        document.getElementById('sidebar').classList.remove('active');
+    if (window.innerWidth <= 768) {
+        sidebar.classList.remove('active');
+        menuToggle.setAttribute('aria-expanded', 'false');
+        menuToggle.setAttribute('aria-label', 'Abrir menu');
+    }
 }
+
+window.addEventListener('resize', () => {
+    if (window.innerWidth > 768) {
+        sidebar.classList.remove('active');
+        menuToggle.setAttribute('aria-expanded', 'false');
+        menuToggle.setAttribute('aria-label', 'Abrir menu');
+    }
+});
+
+document.addEventListener('click', e => {
+    if (window.innerWidth > 768 || !sidebar.classList.contains('active')) return;
+    if (sidebar.contains(e.target) || menuToggle.contains(e.target)) return;
+    closeSidebar();
+});
 
 // ============================================================
 // DASHBOARD
@@ -209,11 +247,12 @@ function renderIngredients() {
             <td><strong style="color:var(--primary-dark)">${fmtBRL(ing.unitCost)} / ${unitLabel(ing.unit)}</strong></td>
             <td>${ing.supplier || '—'}</td>
             <td>
-                <button class="btn btn-secondary btn-sm" onclick="editIngredient(${ing.id})"><i class="fas fa-edit"></i></button>
-                <button class="btn btn-danger btn-sm"    onclick="confirmDeleteIngredient(${ing.id})"><i class="fas fa-trash"></i></button>
+                <button class="btn btn-secondary btn-sm" onclick="editIngredient(${ing.id})" title="Editar ingrediente" aria-label="Editar ingrediente"><i class="fas fa-edit"></i></button>
+                <button class="btn btn-danger btn-sm"    onclick="confirmDeleteIngredient(${ing.id})" title="Excluir ingrediente" aria-label="Excluir ingrediente"><i class="fas fa-trash"></i></button>
             </td>`;
         tbody.appendChild(tr);
     });
+    applyTableCellLabels('#ingredients-content .data-table');
 }
 
 // ============================================================
@@ -367,11 +406,12 @@ function renderFixedCosts() {
             <td>${c.name}</td>
             <td>${fmtBRL(c.value)}</td>
             <td>
-                <button class="btn btn-secondary btn-sm" onclick="editFixedCost(${c.id})"><i class="fas fa-edit"></i></button>
-                <button class="btn btn-danger btn-sm"    onclick="confirmDeleteFixedCost(${c.id})"><i class="fas fa-trash"></i></button>
+                <button class="btn btn-secondary btn-sm" onclick="editFixedCost(${c.id})" title="Editar custo fixo" aria-label="Editar custo fixo"><i class="fas fa-edit"></i></button>
+                <button class="btn btn-danger btn-sm"    onclick="confirmDeleteFixedCost(${c.id})" title="Excluir custo fixo" aria-label="Excluir custo fixo"><i class="fas fa-trash"></i></button>
             </td>`;
         tbody.appendChild(tr);
     });
+    applyTableCellLabels('#fixed-costs-content .data-table');
 }
 
 // ============================================================
@@ -451,11 +491,12 @@ function renderRecipes() {
             <td>${fmtBRL(total)}</td>
             <td>${fmtBRL(unit)}</td>
             <td>
-                <button class="btn btn-secondary btn-sm" onclick="viewRecipe(${r.id})"><i class="fas fa-eye"></i></button>
-                <button class="btn btn-danger btn-sm"    onclick="confirmDeleteRecipe(${r.id})"><i class="fas fa-trash"></i></button>
+                <button class="btn btn-secondary btn-sm" onclick="viewRecipe(${r.id})" title="Ver receita" aria-label="Ver receita"><i class="fas fa-eye"></i></button>
+                <button class="btn btn-danger btn-sm"    onclick="confirmDeleteRecipe(${r.id})" title="Excluir receita" aria-label="Excluir receita"><i class="fas fa-trash"></i></button>
             </td>`;
         tbody.appendChild(tr);
     });
+    applyTableCellLabels('#recipes-content .data-table');
 }
 
 // ============================================================

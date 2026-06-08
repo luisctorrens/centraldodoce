@@ -1,81 +1,126 @@
-# Central do Doce — Gestão de Confeitaria
+# Central do Doce - Gestão de Confeitaria
 
-## Descrição
+## Visão geral
 
-**Central do Doce** é um sistema web completo desenvolvido em HTML5, CSS3 e JavaScript puro para auxiliar doceiras e confeiteiros no controle de ingredientes, receitas, custos fixos e precificação de produtos.
+O **Central do Doce** é uma interface web de gestão para confeitaria, criada como MVP acadêmico em HTML, CSS e JavaScript puro. O sistema simula o fluxo de uma plataforma real para controle de ingredientes, custos fixos, receitas, cálculo de custo por unidade, precificação sugerida, busca de endereço por CEP e alternância persistente entre modo claro e modo escuro.
 
-## Tecnologias
+O projeto possui login funcional de demonstração, navegação por menu lateral, telas de cadastro/listagem/detalhes, mensagens de feedback e persistência local dos dados usando `localStorage`.
 
-- HTML5 semântico
-- CSS3 (Flexbox + Grid Layout, sem frameworks)
-- JavaScript Vanilla (sem frameworks)
-- LocalStorage para persistência de dados
-- Font Awesome para ícones
-- ViaCEP (API real) para busca de endereço
+## Tecnologias utilizadas
 
-## Estrutura de Arquivos
+- **HTML5** para estrutura das telas e formulários.
+- **CSS3** para identidade visual, layout, responsividade e dark mode.
+- **JavaScript Vanilla** para navegação, CRUD simulado, cálculos, tema e integrações.
+- **Flexbox** para alinhamentos, barras, menus, formulários e componentes internos.
+- **Grid Layout** para cards, formulários em colunas, painéis e áreas responsivas.
+- **Font Awesome** para ícones.
+- **LocalStorage** para persistência dos dados do MVP.
+- **ViaCEP** como API aberta/grátis para busca de endereço.
+- **API Ninjas** representada no fluxo de pesquisa de produto, com resultados simulados para uso acadêmico sem exposição de chave de API.
 
-```
+> O projeto não utiliza Bootstrap. A responsividade foi implementada com CSS próprio usando Flexbox, Grid Layout e media queries.
+
+## Estrutura dos arquivos
+
+```text
 central-do-doce/
-├── index.html      # Todas as 10 telas do sistema
-├── style.css       # Estilos completos e responsivos
-├── script.js       # Lógica completa do sistema
-└── README.md       # Este arquivo
+├── index.html    # Estrutura das telas do sistema
+├── style.css     # Estilos, layout, dark mode e responsividade
+├── script.js     # Regras de navegação, CRUD, cálculos e persistência
+└── README.md     # Documentação técnica do projeto
 ```
 
-## Como Usar
+## Funcionalidades principais
 
-1. Abra `index.html` no navegador
-2. Login: **admin** / **123456**
-3. Comece cadastrando seus ingredientes
+- Tela de login com usuário e senha de teste.
+- Recurso de ocultar/exibir senha.
+- Dashboard com resumo de ingredientes, receitas e custos fixos.
+- Cadastro, edição, listagem e exclusão de ingredientes.
+- Cálculo automático de custo por unidade.
+- Cadastro, edição, listagem, exclusão e detalhamento de receitas.
+- Cálculo de custo total, custo por unidade e preço sugerido.
+- Cadastro, edição, listagem e exclusão de custos fixos.
+- Busca de CEP usando ViaCEP.
+- Pesquisa simulada de produto com indicação de API Ninjas.
+- Dark mode persistente via `localStorage`.
+- Toasts de sucesso, erro e aviso.
+- Modal de confirmação de exclusão.
+- Tabelas de dados responsivas.
 
-## Lógica de Custo por Unidade
+## Onde Flexbox é utilizado
 
-### Cadastro de Ingrediente
+O Flexbox é usado para controlar alinhamento e distribuição de elementos em várias áreas:
 
-Ao cadastrar um ingrediente, informe:
+- `.login-container`: centralização vertical e horizontal do card de login.
+- `.login-form`: organização vertical dos campos.
+- `.input-wrapper`: alinhamento de ícone, input e botão de senha.
+- `.sidebar`: estrutura vertical do menu lateral.
+- `.sidebar-header`, `.sidebar-nav` e `.nav-item`: alinhamento dos ícones e textos do menu.
+- `.main-content`: organização entre barra superior e conteúdo.
+- `.top-bar` e `.top-bar-right`: alinhamento da barra superior.
+- `.page-header`: alinhamento entre título e botões de ação.
+- `.card`: alinhamento de ícone e conteúdo nos cards do dashboard.
+- `.form-actions`, `.search-wrapper` e `.cep-wrapper`: organização de botões e campos.
+- `.ingredient-detail`: distribuição de nome, quantidade e custo.
+- `.theme-toggle` e `.theme-btn`: botões de alternância de tema.
+- `.modal`, `.modal-header` e `.modal-footer`: centralização e alinhamento do modal.
+- `.toast-container` e `.toast`: empilhamento e alinhamento das mensagens.
 
-| Campo | Exemplo |
-|---|---|
-| Nome | Farinha de Trigo |
-| Marca | Dona Benta |
-| Quantidade na Embalagem | 1000 |
-| Unidade de Medida | g (gramas) |
-| Preço da Embalagem | R$ 8,50 |
+## Onde Grid Layout é utilizado
 
-O sistema calcula automaticamente:
+O Grid Layout é usado nas áreas com colunas adaptáveis:
 
-```
-Custo por Unidade = Preço da Embalagem ÷ Quantidade na Embalagem
-Custo por Unidade = R$ 8,50 ÷ 1000 g = R$ 0,0085 / g
-```
+- `.dashboard-cards`: cards principais do dashboard.
+- `.dashboard-stats`: indicadores financeiros do dashboard.
+- `.form-row`: campos de formulário em colunas responsivas.
+- `.ingredient-row`: linhas de ingredientes na composição da receita.
+- `.recipe-cost-preview`: prévia dos custos calculados.
+- `.recipe-details-grid`: detalhes da receita com coluna de informações e coluna de custos.
+- `.settings-container`: blocos da tela de configurações.
+- Tabelas no mobile: as células passam a se organizar em grade com rótulo e valor.
 
-### Cadastro de Receita
+## Responsividade
 
-Ao adicionar um ingrediente à receita, informe a quantidade usada **na mesma unidade**:
+A responsividade foi revisada para Desktop, Tablet e Mobile.
 
-| Ingrediente | Quantidade Usada | Custo |
-|---|---|---|
-| Farinha de Trigo | 300 g | R$ 0,0085 × 300 = R$ 2,55 |
-| Açúcar Cristal | 150 g | R$ 0,0042 × 150 = R$ 0,63 |
-| Ovos | 3 un | R$ 1,00 × 3 = R$ 3,00 |
+No desktop, o sistema mantém menu lateral fixo, área principal ampla, cards em colunas e tabelas completas.
 
-O sistema calcula em tempo real:
+No tablet, grids passam a reduzir a quantidade de colunas, a tela de detalhes da receita vira uma coluna única e o espaçamento é reduzido.
 
-```
-Custo Total       = soma dos custos de cada ingrediente
-Custo por Unidade = Custo Total ÷ Rendimento
-Preço Sugerido    = Custo por Unidade × 2,5  (margem de 150%)
-```
+No mobile, o menu lateral passa a ser recolhível, os formulários ficam em uma coluna, botões ocupam largura total quando necessário e as tabelas deixam de depender apenas de rolagem horizontal, passando a se comportar como cartões com rótulos por célula.
 
-## Publicação no GitHub Pages
+Também foram adicionados ajustes para evitar overflow horizontal, melhorar alinhamentos e preservar leitura em telas pequenas.
 
-1. Crie um repositório chamado `central-do-doce` no GitHub
-2. Faça upload dos 4 arquivos
-3. Vá em **Settings → Pages → Source: main**
-4. Acesse: `https://seu-usuario.github.io/central-do-doce/`
+## Dark Mode
 
-## Credenciais de Teste
+O dark mode é ativado na tela de configurações e salvo em `localStorage` pela chave `centralDoDoce_theme`.
 
-- Usuário: `admin`
-- Senha: `123456`
+Foram revisadas as variáveis de cor para garantir contraste adequado entre texto, cards, tabelas, botões e áreas de conteúdo. No modo escuro, o rosa claro deixou de ser usado como fundo principal de elementos com texto claro, evitando baixa legibilidade.
+
+## Alterações realizadas nesta revisão
+
+- Corrigida a tela de login para ocupar toda a largura e altura da viewport.
+- Centralizado o card de login verticalmente e horizontalmente em qualquer resolução.
+- Ajustadas as cores principais para melhor contraste em botões e elementos interativos.
+- Revisado o dark mode para remover texto claro sobre fundo rosa claro.
+- Adicionados limites de largura e `min-width: 0` em áreas críticas para evitar overflow.
+- Melhorada a responsividade de cards, formulários, tabelas, modal, toast e menu.
+- Tabelas passam a receber rótulos por célula no mobile.
+- Botões apenas com ícone receberam `title` e `aria-label`.
+- Botão do menu lateral recebeu controle de `aria-expanded`.
+- Campo de login recebeu `autocomplete`.
+- Toasts receberam região `aria-live`.
+- README atualizado com visão geral, tecnologias, estrutura, Flexbox, Grid Layout, responsividade, dark mode e mudanças da revisão.
+
+## Como usar
+
+1. Abra o arquivo `index.html` em um navegador.
+2. Use as credenciais de teste:
+   - Usuário: `admin`
+   - Senha: `123456`
+3. Cadastre ou edite ingredientes, custos fixos e receitas.
+4. Acesse Configurações para alternar entre modo claro e modo escuro.
+
+## Compatibilidade com o enunciado
+
+O projeto continua implementado apenas com HTML, CSS e JavaScript, utiliza Flexbox e Grid Layout, possui login com exibir/ocultar senha, navegação funcional, mensagens de feedback, persistência local, dark mode persistente, tabelas de dados, integração com API aberta/grátis via ViaCEP e fluxo de pesquisa relacionado à API Ninjas.
