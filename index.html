@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Central do Doce - Gestão de Confeitaria</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- TELA 1: LOGIN -->
+    <div id="login-screen" class="screen active">
+        <div class="login-container">
+            <div class="login-box">
+                <div class="login-header">
+                    <i class="fas fa-cupcake"></i>
+                    <h1>Central do Doce</h1>
+                    <p>Gestão Inteligente de Confeitaria</p>
+                </div>
+                
+                <form id="login-form" class="login-form">
+                    <div class="form-group">
+                        <label for="username">Usuário</label>
+                        <div class="input-wrapper">
+                            <i class="fas fa-user"></i>
+                            <input type="text" id="username" placeholder="Digite seu usuário" required>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="password">Senha</label>
+                        <div class="input-wrapper">
+                            <i class="fas fa-lock"></i>
+                            <input type="password" id="password" placeholder="Digite sua senha" required>
+                            <button type="button" id="toggle-password" class="toggle-btn">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary btn-full">
+                        <i class="fas fa-sign-in-alt"></i> Entrar
+                    </button>
+                </form>
+                
+                <div class="login-footer">
+                    <p>Usuário: <strong>admin</strong> | Senha: <strong>123456</strong></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TELA 2: DASHBOARD -->
+    <div id="dashboard-screen" class="screen">
+        <div class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <i class="fas fa-cupcake"></i>
+                <h2>Central do Doce</h2>
+            </div>
+            
+            <nav class="sidebar-nav">
+                <a href="#" data-screen="dashboard" class="nav-item active">
+                    <i class="fas fa-chart-line"></i> Dashboard
+                </a>
+                <a href="#" data-screen="ingredients" class="nav-item">
+                    <i class="fas fa-flask"></i> Ingredientes
+                </a>
+                <a href="#" data-screen="fixed-costs" class="nav-item">
+                    <i class="fas fa-coins"></i> Custos Fixos
+                </a>
+                <a href="#" data-screen="recipes" class="nav-item">
+                    <i class="fas fa-book"></i> Receitas
+                </a>
+                <a href="#" data-screen="settings" class="nav-item">
+                    <i class="fas fa-cog"></i> Configurações
+                </a>
+                <a href="#" id="logout-btn" class="nav-item logout">
+                    <i class="fas fa-sign-out-alt"></i> Sair
+                </a>
+            </nav>
+        </div>
+
+        <div class="main-content">
+            <div class="top-bar">
+                <button id="menu-toggle" class="menu-toggle">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <div class="top-bar-right">
+                    <span id="user-name-top">Admin</span>
+                    <i class="fas fa-user-circle"></i>
+                </div>
+            </div>
+
+            <!-- Dashboard Content -->
+            <div id="dashboard-content" class="dashboard-content">
+                <div class="page-header">
+                    <h1>Dashboard</h1>
+                    <p>Bem-vindo ao seu painel de controle</p>
+                </div>
+
+                <div class="dashboard-cards">
+                    <div class="card card-primary">
+                        <div class="card-icon">
+                            <i class="fas fa-flask"></i>
+                        </div>
+                        <div class="card-content">
+                            <h3>Ingredientes</h3>
+                            <p class="card-value" id="total-ingredients">0</p>
+                            <small>Cadastrados</small>
+                        </div>
+                    </div>
+
+                    <div class="card card-secondary">
+                        <div class="card-icon">
+                            <i class="fas fa-book"></i>
+                        </div>
+                        <div class="card-content">
+                            <h3>Receitas</h3>
+                            <p class="card-value" id="total-recipes">0</p>
+                            <small>Cadastradas</small>
+                        </div>
+                    </div>
+
+                    <div class="card card-tertiary">
+                        <div class="card-icon">
+                            <i class="fas fa-coins"></i>
+                        </div>
+                        <div class="card-content">
+                            <h3>Custos Fixos</h3>
+                            <p class="card-value" id="total-fixed-costs">0</p>
+                            <small>Cadastrados</small>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="dashboard-stats">
+                    <div class="stat-box">
+                        <h4>Custo Médio por Receita</h4>
+                        <p id="avg-recipe-cost">R$ 0,00</p>
+                    </div>
+                    <div class="stat-box">
+                        <h4>Total de Custos Fixos</h4>
+                        <p id="total-fixed-costs-value">R$ 0,00</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TELA 3: LISTA DE INGREDIENTES -->
+            <div id="ingredients-content" class="content-section" style="display: none;">
+                <div class="page-header">
+                    <h1>Ingredientes</h1>
+                    <button class="btn btn-primary" id="new-ingredient-btn">
+                        <i class="fas fa-plus"></i> Novo Ingrediente
+                    </button>
+                </div>
+
+                <div class="table-container">
+                    <table id="ingredients-table" class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Nome</th>
+                                <th>Marca</th>
+                                <th>Preço</th>
+                                <th>Fornecedor</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ingredients-tbody">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- TELA 4: CADASTRO DE INGREDIENTE -->
+            <div id="ingredient-form-content" class="content-section" style="display: none;">
+                <div class="page-header">
+                    <h1 id="ingredient-form-title">Novo Ingrediente</h1>
+                </div>
+
+                <div class="form-container">
+                    <form id="ingredient-form">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="ingredient-name">Nome do Ingrediente *</label>
+                                <input type="text" id="ingredient-name" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="ingredient-brand">Marca</label>
+                                <input type="text" id="ingredient-brand">
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="ingredient-unit">Unidade *</label>
+                                <select id="ingredient-unit" required>
+                                    <option value="">Selecione...</option>
+                                    <option value="kg">Kg</option>
+                                    <option value="g">Gramas</option>
+                                    <option value="l">Litros</option>
+                                    <option value="ml">Mililitros</option>
+                                    <option value="un">Unidades</option>
+                                    <option value="xícara">Xícara</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="ingredient-price">Preço (R$) *</label>
+                                <input type="number" id="ingredient-price" step="0.01" required>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="ingredient-supplier">Fornecedor</label>
+                                <input type="text" id="ingredient-supplier">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="product-search">Pesquisar Produto (API Ninjas)</label>
+                            <div class="search-wrapper">
+                                <input type="text" id="product-search" placeholder="Digite o nome do produto...">
+                                <button type="button" id="search-product-btn" class="btn btn-secondary">
+                                    <i class="fas fa-search"></i> Pesquisar
+                                </button>
+                            </div>
+                            <div id="search-results" class="search-results"></div>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Salvar
+                            </button>
+                            <button type="button" class="btn btn-secondary" id="cancel-ingredient-btn">
+                                <i class="fas fa-times"></i> Cancelar
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- TELA 5: LISTA DE CUSTOS FIXOS -->
+            <div id="fixed-costs-content" class="content-section" style="display: none;">
+                <div class="page-header">
+                    <h1>Custos Fixos</h1>
+                    <button class="btn btn-primary" id="new-fixed-cost-btn">
+                        <i class="fas fa-plus"></i> Novo Custo
+                    </button>
+                </div>
+
+                <div class="table-container">
+                    <table id="fixed-costs-table" class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Nome</th>
+                                <th>Valor (R$)</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="fixed-costs-tbody">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- TELA 6: CADASTRO DE CUSTOS FIXOS -->
+            <div id="fixed-cost-form-content" class="content-section" style="display: none;">
+                <div class="page-header">
+                    <h1 id="fixed-cost-form-title">Novo Custo Fixo</h1>
+                </div>
+
+                <div class="form-container">
+                    <form id="fixed-cost-form">
+                        <div class="form-group">
+                            <label for="fixed-cost-name">Nome do Custo *</label>
+                            <input type="text" id="fixed-cost-name" placeholder="Ex: Aluguel, Energia..." required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="fixed-cost-value">Valor (R$) *</label>
+                            <input type="number" id="fixed-cost-value" step="0.01" required>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Salvar
+                            </button>
+                            <button type="button" class="btn btn-secondary" id="cancel-fixed-cost-btn">
+                                <i class="fas fa-times"></i> Cancelar
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- TELA 7: LISTA DE RECEITAS -->
+            <div id="recipes-content" class="content-section" style="display: none;">
+                <div class="page-header">
+                    <h1>Receitas</h1>
+                    <button class="btn btn-primary" id="new-recipe-btn">
+                        <i class="fas fa-plus"></i> Nova Receita
+                    </button>
+                </div>
+
+                <div class="table-container">
+                    <table id="recipes-table" class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Receita</th>
+                                <th>Rendimento</th>
+                                <th>Custo Total</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="recipes-tbody">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- TELA 8: CADASTRO DE RECEITA -->
+            <div id="recipe-form-content" class="content-section" style="display: none;">
+                <div class="page-header">
+                    <h1 id="recipe-form-title">Nova Receita</h1>
+                </div>
+
+                <div class="form-container">
+                    <form id="recipe-form">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="recipe-name">Nome da Receita *</label>
+                                <input type="text" id="recipe-name" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="recipe-yield">Rendimento (unidades) *</label>
+                                <input type="number" id="recipe-yield" required>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Ingredientes</label>
+                            <div id="recipe-ingredients-list" class="ingredients-list">
+                            </div>
+                            <button type="button" id="add-ingredient-btn" class="btn btn-secondary">
+                                <i class="fas fa-plus"></i> Adicionar Ingrediente
+                            </button>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Salvar
+                            </button>
+                            <button type="button" class="btn btn-secondary" id="cancel-recipe-btn">
+                                <i class="fas fa-times"></i> Cancelar
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- TELA 9: DETALHES DA RECEITA -->
+            <div id="recipe-details-content" class="content-section" style="display: none;">
+                <div class="page-header">
+                    <h1 id="recipe-details-title">Detalhes da Receita</h1>
+                    <button class="btn btn-secondary" id="back-to-recipes-btn">
+                        <i class="fas fa-arrow-left"></i> Voltar
+                    </button>
+                </div>
+
+                <div class="recipe-details-container">
+                    <div class="recipe-info">
+                        <div class="info-card">
+                            <h3>Ingredientes</h3>
+                            <div id="recipe-ingredients-details" class="ingredients-details">
+                            </div>
+                        </div>
+
+                        <div class="recipe-costs">
+                            <div class="cost-card">
+                                <div class="cost-item">
+                                    <span>Custo Total</span>
+                                    <p class="cost-value" id="recipe-total-cost">R$ 0,00</p>
+                                </div>
+                            </div>
+                            <div class="cost-card">
+                                <div class="cost-item">
+                                    <span>Custo por Unidade</span>
+                                    <p class="cost-value" id="recipe-unit-cost">R$ 0,00</p>
+                                </div>
+                            </div>
+                            <div class="cost-card highlighted">
+                                <div class="cost-item">
+                                    <span>Preço Sugerido</span>
+                                    <p class="cost-value" id="recipe-suggested-price">R$ 0,00</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="recipe-actions">
+                        <button class="btn btn-primary" id="edit-recipe-btn">
+                            <i class="fas fa-edit"></i> Editar
+                        </button>
+                        <button class="btn btn-danger" id="delete-recipe-btn">
+                            <i class="fas fa-trash"></i> Excluir
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TELA 10: CONFIGURAÇÕES -->
+            <div id="settings-content" class="content-section" style="display: none;">
+                <div class="page-header">
+                    <h1>Configurações</h1>
+                </div>
+
+                <div class="settings-container">
+                    <div class="settings-section">
+                        <h3>Perfil do Usuário</h3>
+                        <div class="setting-item">
+                            <label>Nome do Usuário</label>
+                            <p id="settings-username">Admin</p>
+                        </div>
+                        <div class="setting-item">
+                            <label>Email</label>
+                            <p id="settings-email">admin@centraldodoce.com</p>
+                        </div>
+                    </div>
+
+                    <div class="settings-section">
+                        <h3>Endereço (ViaCEP)</h3>
+                        <div class="form-group">
+                            <label for="cep-input">CEP</label>
+                            <div class="cep-wrapper">
+                                <input type="text" id="cep-input" placeholder="Digite seu CEP" maxlength="9">
+                                <button type="button" id="search-cep-btn" class="btn btn-secondary">
+                                    <i class="fas fa-search"></i> Buscar
+                                </button>
+                            </div>
+                        </div>
+                        <div id="address-info" class="address-info">
+                        </div>
+                    </div>
+
+                    <div class="settings-section">
+                        <h3>Aparência</h3>
+                        <div class="setting-item">
+                            <label>Tema</label>
+                            <div class="theme-toggle">
+                                <button id="light-mode-btn" class="theme-btn active">
+                                    <i class="fas fa-sun"></i> Claro
+                                </button>
+                                <button id="dark-mode-btn" class="theme-btn">
+                                    <i class="fas fa-moon"></i> Escuro
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAIS -->
+    <div id="delete-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Confirmar Exclusão</h2>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p id="delete-message">Tem certeza que deseja excluir este item?</p>
+            </div>
+            <div class="modal-footer">
+                <button id="confirm-delete-btn" class="btn btn-danger">Excluir</button>
+                <button id="cancel-delete-btn" class="btn btn-secondary">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- TOAST NOTIFICATIONS -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <script src="script.js"></script>
+</body>
+</html>
