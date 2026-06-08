@@ -1,736 +1,784 @@
-// ===========================
-// GERENCIAMENTO DE DADOS
-// ===========================
+// ============================================================
+// CENTRAL DO DOCE — script.js
+// ============================================================
+// MODELO DE INGREDIENTE:
+//   id, name, brand, pkgQty (qtd na embalagem), unit (g/kg/ml/l/un/dz),
+//   pkgPrice (preço da embalagem), unitCost (pkgPrice / pkgQty),
+//   supplier
+//
+// MODELO DE ITEM DE RECEITA:
+//   ingredientId, qty (quantidade usada, na mesma unidade do ingrediente)
+//   custo do item = ingredient.unitCost × qty
+// ============================================================
 
-let appData = {
-    user: null,
-    ingredients: [],
-    recipes: [],
-    fixedCosts: [],
-    currentRecipeId: null,
-    currentIngredientId: null,
-    currentFixedCostId: null,
-    editingRecipeId: null,
-    editingIngredientId: null,
-    editingFixedCostId: null,
+// ============================================================
+// ESTADO GLOBAL
+// ============================================================
+let db = {
+    user:         null,
+    ingredients:  [],
+    recipes:      [],
+    fixedCosts:   [],
 };
 
-// Carregar dados do localStorage
-function loadData() {
-    const saved = localStorage.getItem('centralDoDoceData');
-    if (saved) {
-        appData = JSON.parse(saved);
+let editingIngredientId = null;
+let editingFixedCostId  = null;
+let editingRecipeId     = null;
+let currentRecipeId     = null;
+let pendingDeleteFn     = null;
+
+// ============================================================
+// PERSISTÊNCIA
+// ============================================================
+function loadDB() {
+    const raw = localStorage.getItem('centralDoDoce_v2');
+    if (raw) {
+        try { db = JSON.parse(raw); } catch(e) { /* ignora */ }
     }
 }
 
-// Salvar dados no localStorage
-function saveData() {
-    localStorage.setItem('centralDoDoceData', JSON.stringify(appData));
+function saveDB() {
+    localStorage.setItem('centralDoDoce_v2', JSON.stringify(db));
 }
 
-// Carregar tema
 function loadTheme() {
-    const theme = localStorage.getItem('theme') || 'light';
-    if (theme === 'dark') {
-        document.body.classList.add('dark-mode');
-    }
+    const t = localStorage.getItem('centralDoDoce_theme') || 'light';
+    if (t === 'dark') document.body.classList.add('dark-mode');
+    updateThemeButtons();
 }
 
-// ===========================
-// NAVEGAÇÃO DE TELAS
-// ===========================
-
-function showScreen(screenId) {
+// ============================================================
+// NAVEGAÇÃO
+// ============================================================
+function showScreen(id) {
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-    document.getElementById(screenId).classList.add('active');
+    document.getElementById(id).classList.add('active');
 }
 
-function showContent(contentId) {
-    document.querySelectorAll('.content-section, .dashboard-content').forEach(c => {
-        c.style.display = 'none';
-    });
-    document.getElementById(contentId).style.display = 'block';
+function showContent(id) {
+    document.querySelectorAll('.content-section').forEach(s => s.classList.remove('active-content'));
+    document.getElementById(id).classList.add('active-content');
 }
 
-// ===========================
+function setActiveNav(screen) {
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    const el = document.querySelector(`.nav-item[data-screen="${screen}"]`);
+    if (el) el.classList.add('active');
+}
+
+// ============================================================
+// UTILITÁRIOS
+// ============================================================
+function fmtBRL(value) {
+    return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+}
+
+function unitLabel(unit) {
+    const map = { g: 'g', kg: 'kg', ml: 'ml', l: 'l', un: 'un', dz: 'dz' };
+    return map[unit] || unit;
+}
+
+function showToast(msg, type = 'success') {
+    const icons = { success: 'fa-check-circle', error: 'fa-exclamation-circle', warning: 'fa-exclamation-triangle' };
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    toast.innerHTML = `<i class="fas ${icons[type] || icons.success}"></i><span>${msg}</span>`;
+    document.getElementById('toast-container').appendChild(toast);
+    setTimeout(() => {
+        toast.style.animation = 'slideInRight .3s ease reverse';
+        setTimeout(() => toast.remove(), 280);
+    }, 3200);
+}
+
+function showDeleteModal(msg, onConfirm) {
+    document.getElementById('delete-message').textContent = msg;
+    pendingDeleteFn = onConfirm;
+    document.getElementById('delete-modal').classList.add('active');
+}
+
+// ============================================================
 // LOGIN
-// ===========================
-
-document.getElementById('login-form').addEventListener('submit', (e) => {
+// ============================================================
+document.getElementById('login-form').addEventListener('submit', e => {
     e.preventDefault();
-    const username = document.getElementById('username').value;
-    const password = document.getElementById('password').value;
-
-    if (username === 'admin' && password === '123456') {
-        appData.user = {
-            name: 'Admin',
-            email: 'admin@centraldodoce.com'
-        };
-        saveData();
+    const u = document.getElementById('username').value.trim();
+    const p = document.getElementById('password').value;
+    if (u === 'admin' && p === '123456') {
+        db.user = { name: 'Admin', email: 'admin@centraldodoce.com' };
+        saveDB();
         showScreen('dashboard-screen');
-        updateDashboard();
-        showToast('Login realizado com sucesso!', 'success');
+        goToDashboard();
+        showToast('Login realizado com sucesso!');
     } else {
         showToast('Usuário ou senha incorretos!', 'error');
     }
 });
 
-// Toggle mostrar/ocultar senha
-document.getElementById('toggle-password').addEventListener('click', (e) => {
-    e.preventDefault();
-    const passwordInput = document.getElementById('password');
-    const icon = e.target.closest('button').querySelector('i');
-    
-    if (passwordInput.type === 'password') {
-        passwordInput.type = 'text';
-        icon.classList.remove('fa-eye');
-        icon.classList.add('fa-eye-slash');
+document.getElementById('toggle-password').addEventListener('click', () => {
+    const inp  = document.getElementById('password');
+    const icon = document.getElementById('toggle-icon');
+    if (inp.type === 'password') {
+        inp.type = 'text';
+        icon.classList.replace('fa-eye', 'fa-eye-slash');
     } else {
-        passwordInput.type = 'password';
-        icon.classList.remove('fa-eye-slash');
-        icon.classList.add('fa-eye');
+        inp.type = 'password';
+        icon.classList.replace('fa-eye-slash', 'fa-eye');
     }
 });
 
-// Logout
-document.getElementById('logout-btn').addEventListener('click', (e) => {
+document.getElementById('logout-btn').addEventListener('click', e => {
     e.preventDefault();
-    appData.user = null;
-    saveData();
+    db.user = null;
+    saveDB();
     showScreen('login-screen');
     document.getElementById('login-form').reset();
-    showToast('Desconectado com sucesso!', 'success');
+    showToast('Sessão encerrada.', 'warning');
 });
 
-// ===========================
-// NAVEGAÇÃO DO MENU
-// ===========================
-
-document.querySelectorAll('.nav-item').forEach(item => {
-    item.addEventListener('click', (e) => {
-        if (item.id === 'logout-btn') return;
-        
+// ============================================================
+// MENU LATERAL
+// ============================================================
+document.querySelectorAll('.nav-item[data-screen]').forEach(item => {
+    item.addEventListener('click', e => {
         e.preventDefault();
-        
-        const screenId = item.getAttribute('data-screen');
-        
-        document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
-        item.classList.add('active');
-        
-        if (screenId === 'dashboard') {
-            showContent('dashboard-content');
-            updateDashboard();
-        } else if (screenId === 'ingredients') {
-            showContent('ingredients-content');
-            renderIngredientsList();
-        } else if (screenId === 'fixed-costs') {
-            showContent('fixed-costs-content');
-            renderFixedCostsList();
-        } else if (screenId === 'recipes') {
-            showContent('recipes-content');
-            renderRecipesList();
-        } else if (screenId === 'settings') {
-            showContent('settings-content');
-            updateSettings();
-        }
-        
+        const screen = item.getAttribute('data-screen');
+        setActiveNav(screen);
         closeSidebar();
+        switch (screen) {
+            case 'dashboard':   goToDashboard();   break;
+            case 'ingredients': goToIngredients(); break;
+            case 'fixed-costs': goToFixedCosts();  break;
+            case 'recipes':     goToRecipes();     break;
+            case 'settings':    goToSettings();    break;
+        }
     });
 });
 
-// Menu toggle mobile
 document.getElementById('menu-toggle').addEventListener('click', () => {
     document.getElementById('sidebar').classList.toggle('active');
 });
 
 function closeSidebar() {
-    if (window.innerWidth <= 768) {
+    if (window.innerWidth <= 768)
         document.getElementById('sidebar').classList.remove('active');
-    }
 }
 
-// ===========================
+// ============================================================
 // DASHBOARD
-// ===========================
+// ============================================================
+function goToDashboard() {
+    showContent('dashboard-content');
+    setActiveNav('dashboard');
 
-function updateDashboard() {
-    document.getElementById('total-ingredients').textContent = appData.ingredients.length;
-    document.getElementById('total-recipes').textContent = appData.recipes.length;
-    document.getElementById('total-fixed-costs').textContent = appData.fixedCosts.length;
-    
-    // Custo médio por receita
-    let totalCost = 0;
-    appData.recipes.forEach(recipe => {
-        totalCost += calculateRecipeCost(recipe);
-    });
-    const avgCost = appData.recipes.length > 0 ? totalCost / appData.recipes.length : 0;
-    document.getElementById('avg-recipe-cost').textContent = `R$ ${avgCost.toFixed(2)}`;
-    
-    // Total de custos fixos
-    const totalFixedCosts = appData.fixedCosts.reduce((sum, cost) => sum + parseFloat(cost.value), 0);
-    document.getElementById('total-fixed-costs-value').textContent = `R$ ${totalFixedCosts.toFixed(2)}`;
+    document.getElementById('total-ingredients').textContent = db.ingredients.length;
+    document.getElementById('total-recipes').textContent     = db.recipes.length;
+    document.getElementById('total-fixed-costs').textContent = db.fixedCosts.length;
+
+    const totalFC = db.fixedCosts.reduce((s, c) => s + c.value, 0);
+    document.getElementById('total-fixed-costs-value').textContent = fmtBRL(totalFC);
+
+    const costs = db.recipes.map(r => calcRecipeCost(r));
+    const avg   = costs.length ? costs.reduce((a, b) => a + b, 0) / costs.length : 0;
+    document.getElementById('avg-recipe-cost').textContent = fmtBRL(avg);
 }
 
-// ===========================
-// INGREDIENTES
-// ===========================
-
-document.getElementById('new-ingredient-btn').addEventListener('click', () => {
-    appData.editingIngredientId = null;
-    document.getElementById('ingredient-form-title').textContent = 'Novo Ingrediente';
-    document.getElementById('ingredient-form').reset();
-    showContent('ingredient-form-content');
-});
-
-document.getElementById('cancel-ingredient-btn').addEventListener('click', () => {
+// ============================================================
+// INGREDIENTES — LISTA (Tela 3)
+// ============================================================
+function goToIngredients() {
     showContent('ingredients-content');
-});
+    renderIngredients();
+}
 
-document.getElementById('ingredient-form').addEventListener('submit', (e) => {
-    e.preventDefault();
-    
-    const ingredient = {
-        id: appData.editingIngredientId || Date.now(),
-        name: document.getElementById('ingredient-name').value,
-        brand: document.getElementById('ingredient-brand').value,
-        unit: document.getElementById('ingredient-unit').value,
-        price: parseFloat(document.getElementById('ingredient-price').value),
-        supplier: document.getElementById('ingredient-supplier').value
-    };
-    
-    if (appData.editingIngredientId) {
-        const index = appData.ingredients.findIndex(i => i.id === appData.editingIngredientId);
-        appData.ingredients[index] = ingredient;
-        showToast('Ingrediente atualizado com sucesso!', 'success');
-    } else {
-        appData.ingredients.push(ingredient);
-        showToast('Ingrediente adicionado com sucesso!', 'success');
-    }
-    
-    saveData();
-    updateDashboard();
-    showContent('ingredients-content');
-    renderIngredientsList();
-});
-
-function renderIngredientsList() {
+function renderIngredients() {
     const tbody = document.getElementById('ingredients-tbody');
     tbody.innerHTML = '';
-    
-    appData.ingredients.forEach(ingredient => {
-        const row = document.createElement('tr');
-        row.innerHTML = `
-            <td>${ingredient.name}</td>
-            <td>${ingredient.brand || '-'}</td>
-            <td>R$ ${ingredient.price.toFixed(2)}</td>
-            <td>${ingredient.supplier || '-'}</td>
+
+    if (!db.ingredients.length) {
+        tbody.innerHTML = `<tr class="empty-row"><td colspan="7"><i class="fas fa-flask"></i>Nenhum ingrediente cadastrado ainda.</td></tr>`;
+        return;
+    }
+
+    db.ingredients.forEach(ing => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td><strong>${ing.name}</strong></td>
+            <td>${ing.brand || '—'}</td>
+            <td>${ing.pkgQty} ${unitLabel(ing.unit)}</td>
+            <td>${fmtBRL(ing.pkgPrice)}</td>
+            <td><strong style="color:var(--primary-dark)">${fmtBRL(ing.unitCost)} / ${unitLabel(ing.unit)}</strong></td>
+            <td>${ing.supplier || '—'}</td>
             <td>
-                <button class="btn btn-secondary btn-sm" onclick="editIngredient(${ingredient.id})">
-                    <i class="fas fa-edit"></i>
-                </button>
-                <button class="btn btn-danger btn-sm" onclick="deleteIngredient(${ingredient.id})">
-                    <i class="fas fa-trash"></i>
-                </button>
-            </td>
-        `;
-        tbody.appendChild(row);
+                <button class="btn btn-secondary btn-sm" onclick="editIngredient(${ing.id})"><i class="fas fa-edit"></i></button>
+                <button class="btn btn-danger btn-sm"    onclick="confirmDeleteIngredient(${ing.id})"><i class="fas fa-trash"></i></button>
+            </td>`;
+        tbody.appendChild(tr);
     });
 }
 
+// ============================================================
+// INGREDIENTES — CADASTRO (Tela 4)
+// ============================================================
+document.getElementById('new-ingredient-btn').addEventListener('click', () => {
+    editingIngredientId = null;
+    document.getElementById('ingredient-form-title').textContent = 'Novo Ingrediente';
+    document.getElementById('ingredient-form').reset();
+    document.getElementById('unit-cost-preview-value').textContent = '—';
+    document.getElementById('search-results').innerHTML = '';
+    showContent('ingredient-form-content');
+});
+
+document.getElementById('cancel-ingredient-btn').addEventListener('click', () => goToIngredients());
+
+// Cálculo em tempo real do custo por unidade
+['ingredient-pkg-qty', 'ingredient-price'].forEach(id => {
+    document.getElementById(id).addEventListener('input', updateUnitCostPreview);
+});
+document.getElementById('ingredient-unit').addEventListener('change', updateUnitCostPreview);
+
+function updateUnitCostPreview() {
+    const qty   = parseFloat(document.getElementById('ingredient-pkg-qty').value);
+    const price = parseFloat(document.getElementById('ingredient-price').value);
+    const unit  = document.getElementById('ingredient-unit').value;
+    const el    = document.getElementById('unit-cost-preview-value');
+
+    if (qty > 0 && price > 0 && unit) {
+        const uc = price / qty;
+        el.textContent = `${fmtBRL(uc)} / ${unitLabel(unit)}`;
+    } else {
+        el.textContent = '—';
+    }
+}
+
+document.getElementById('ingredient-form').addEventListener('submit', e => {
+    e.preventDefault();
+
+    const pkgQty   = parseFloat(document.getElementById('ingredient-pkg-qty').value);
+    const pkgPrice = parseFloat(document.getElementById('ingredient-price').value);
+    const unit     = document.getElementById('ingredient-unit').value;
+
+    if (pkgQty <= 0 || pkgPrice <= 0) {
+        showToast('Informe quantidade e preço válidos!', 'warning');
+        return;
+    }
+
+    const ing = {
+        id:        editingIngredientId || Date.now(),
+        name:      document.getElementById('ingredient-name').value.trim(),
+        brand:     document.getElementById('ingredient-brand').value.trim(),
+        pkgQty,
+        unit,
+        pkgPrice,
+        unitCost:  pkgPrice / pkgQty,
+        supplier:  document.getElementById('ingredient-supplier').value.trim(),
+    };
+
+    if (editingIngredientId) {
+        const idx = db.ingredients.findIndex(i => i.id === editingIngredientId);
+        db.ingredients[idx] = ing;
+        showToast('Ingrediente atualizado!');
+    } else {
+        db.ingredients.push(ing);
+        showToast('Ingrediente salvo!');
+    }
+
+    saveDB();
+    goToIngredients();
+});
+
 function editIngredient(id) {
-    const ingredient = appData.ingredients.find(i => i.id === id);
-    if (!ingredient) return;
-    
-    appData.editingIngredientId = id;
+    const ing = db.ingredients.find(i => i.id === id);
+    if (!ing) return;
+    editingIngredientId = id;
     document.getElementById('ingredient-form-title').textContent = 'Editar Ingrediente';
-    document.getElementById('ingredient-name').value = ingredient.name;
-    document.getElementById('ingredient-brand').value = ingredient.brand;
-    document.getElementById('ingredient-unit').value = ingredient.unit;
-    document.getElementById('ingredient-price').value = ingredient.price;
-    document.getElementById('ingredient-supplier').value = ingredient.supplier;
-    
+    document.getElementById('ingredient-name').value     = ing.name;
+    document.getElementById('ingredient-brand').value    = ing.brand;
+    document.getElementById('ingredient-pkg-qty').value  = ing.pkgQty;
+    document.getElementById('ingredient-unit').value     = ing.unit;
+    document.getElementById('ingredient-price').value    = ing.pkgPrice;
+    document.getElementById('ingredient-supplier').value = ing.supplier;
+    document.getElementById('search-results').innerHTML  = '';
+    updateUnitCostPreview();
     showContent('ingredient-form-content');
 }
 
-function deleteIngredient(id) {
-    showDeleteModal(`Tem certeza que deseja excluir este ingrediente?`, () => {
-        appData.ingredients = appData.ingredients.filter(i => i.id !== id);
-        saveData();
-        updateDashboard();
-        renderIngredientsList();
-        showToast('Ingrediente excluído com sucesso!', 'success');
+function confirmDeleteIngredient(id) {
+    showDeleteModal('Tem certeza que deseja excluir este ingrediente?', () => {
+        db.ingredients = db.ingredients.filter(i => i.id !== id);
+        saveDB();
+        renderIngredients();
+        goToDashboard();
+        goToIngredients();
+        showToast('Ingrediente excluído.', 'warning');
     });
 }
 
-// Pesquisa de produtos (API Ninjas - simulada)
+// Pesquisa de produto (API Ninjas simulada)
 document.getElementById('search-product-btn').addEventListener('click', () => {
-    const searchTerm = document.getElementById('product-search').value;
-    if (!searchTerm) {
-        showToast('Digite um nome de produto!', 'warning');
-        return;
-    }
-    
-    // Simulação de busca
-    const results = [
-        { name: `${searchTerm} Premium`, price: 25.90 },
-        { name: `${searchTerm} Econômico`, price: 15.50 },
-        { name: `${searchTerm} Importado`, price: 45.00 }
+    const term = document.getElementById('product-search').value.trim();
+    if (!term) { showToast('Digite um nome de produto!', 'warning'); return; }
+
+    const mock = [
+        { name: `${term} Premium 1kg`,   pkgQty: 1000, unit: 'g',  price: 18.90 },
+        { name: `${term} Tradicional 500g`, pkgQty: 500, unit: 'g', price: 9.50 },
+        { name: `${term} Importado 250g`,  pkgQty: 250, unit: 'g',  price: 14.00 },
     ];
-    
-    const resultsDiv = document.getElementById('search-results');
-    resultsDiv.innerHTML = '';
-    
-    results.forEach(result => {
-        const div = document.createElement('div');
-        div.className = 'search-result-item';
-        div.innerHTML = `
-            <strong>${result.name}</strong> - R$ ${result.price.toFixed(2)}
-        `;
-        div.addEventListener('click', () => {
-            document.getElementById('ingredient-name').value = result.name;
-            document.getElementById('ingredient-price').value = result.price;
-            resultsDiv.innerHTML = '';
+
+    const div = document.getElementById('search-results');
+    div.innerHTML = '';
+    mock.forEach(item => {
+        const el = document.createElement('div');
+        el.className = 'search-result-item';
+        el.innerHTML = `<span>${item.name}</span><span>${fmtBRL(item.price)}</span>`;
+        el.addEventListener('click', () => {
+            document.getElementById('ingredient-name').value    = item.name;
+            document.getElementById('ingredient-pkg-qty').value = item.pkgQty;
+            document.getElementById('ingredient-unit').value    = item.unit;
+            document.getElementById('ingredient-price').value   = item.price;
+            updateUnitCostPreview();
+            div.innerHTML = '';
+            showToast('Produto preenchido!');
         });
-        resultsDiv.appendChild(div);
+        div.appendChild(el);
     });
-    
-    showToast('Produtos encontrados!', 'success');
+    showToast('Resultados simulados carregados!');
 });
 
-// ===========================
-// CUSTOS FIXOS
-// ===========================
+// ============================================================
+// CUSTOS FIXOS — LISTA (Tela 5)
+// ============================================================
+function goToFixedCosts() {
+    showContent('fixed-costs-content');
+    renderFixedCosts();
+}
 
+function renderFixedCosts() {
+    const tbody = document.getElementById('fixed-costs-tbody');
+    tbody.innerHTML = '';
+
+    if (!db.fixedCosts.length) {
+        tbody.innerHTML = `<tr class="empty-row"><td colspan="3"><i class="fas fa-coins"></i>Nenhum custo fixo cadastrado ainda.</td></tr>`;
+        return;
+    }
+
+    db.fixedCosts.forEach(c => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td>${c.name}</td>
+            <td>${fmtBRL(c.value)}</td>
+            <td>
+                <button class="btn btn-secondary btn-sm" onclick="editFixedCost(${c.id})"><i class="fas fa-edit"></i></button>
+                <button class="btn btn-danger btn-sm"    onclick="confirmDeleteFixedCost(${c.id})"><i class="fas fa-trash"></i></button>
+            </td>`;
+        tbody.appendChild(tr);
+    });
+}
+
+// ============================================================
+// CUSTOS FIXOS — CADASTRO (Tela 6)
+// ============================================================
 document.getElementById('new-fixed-cost-btn').addEventListener('click', () => {
-    appData.editingFixedCostId = null;
+    editingFixedCostId = null;
     document.getElementById('fixed-cost-form-title').textContent = 'Novo Custo Fixo';
     document.getElementById('fixed-cost-form').reset();
     showContent('fixed-cost-form-content');
 });
 
-document.getElementById('cancel-fixed-cost-btn').addEventListener('click', () => {
-    showContent('fixed-costs-content');
-});
+document.getElementById('cancel-fixed-cost-btn').addEventListener('click', () => goToFixedCosts());
 
-document.getElementById('fixed-cost-form').addEventListener('submit', (e) => {
+document.getElementById('fixed-cost-form').addEventListener('submit', e => {
     e.preventDefault();
-    
-    const fixedCost = {
-        id: appData.editingFixedCostId || Date.now(),
-        name: document.getElementById('fixed-cost-name').value,
-        value: parseFloat(document.getElementById('fixed-cost-value').value)
+    const cost = {
+        id:    editingFixedCostId || Date.now(),
+        name:  document.getElementById('fixed-cost-name').value.trim(),
+        value: parseFloat(document.getElementById('fixed-cost-value').value),
     };
-    
-    if (appData.editingFixedCostId) {
-        const index = appData.fixedCosts.findIndex(c => c.id === appData.editingFixedCostId);
-        appData.fixedCosts[index] = fixedCost;
-        showToast('Custo fixo atualizado com sucesso!', 'success');
+    if (editingFixedCostId) {
+        const idx = db.fixedCosts.findIndex(c => c.id === editingFixedCostId);
+        db.fixedCosts[idx] = cost;
+        showToast('Custo fixo atualizado!');
     } else {
-        appData.fixedCosts.push(fixedCost);
-        showToast('Custo fixo adicionado com sucesso!', 'success');
+        db.fixedCosts.push(cost);
+        showToast('Custo fixo salvo!');
     }
-    
-    saveData();
-    updateDashboard();
-    showContent('fixed-costs-content');
-    renderFixedCostsList();
+    saveDB();
+    goToFixedCosts();
 });
-
-function renderFixedCostsList() {
-    const tbody = document.getElementById('fixed-costs-tbody');
-    tbody.innerHTML = '';
-    
-    appData.fixedCosts.forEach(cost => {
-        const row = document.createElement('tr');
-        row.innerHTML = `
-            <td>${cost.name}</td>
-            <td>R$ ${cost.value.toFixed(2)}</td>
-            <td>
-                <button class="btn btn-secondary btn-sm" onclick="editFixedCost(${cost.id})">
-                    <i class="fas fa-edit"></i>
-                </button>
-                <button class="btn btn-danger btn-sm" onclick="deleteFixedCost(${cost.id})">
-                    <i class="fas fa-trash"></i>
-                </button>
-            </td>
-        `;
-        tbody.appendChild(row);
-    });
-}
 
 function editFixedCost(id) {
-    const cost = appData.fixedCosts.find(c => c.id === id);
-    if (!cost) return;
-    
-    appData.editingFixedCostId = id;
+    const c = db.fixedCosts.find(x => x.id === id);
+    if (!c) return;
+    editingFixedCostId = id;
     document.getElementById('fixed-cost-form-title').textContent = 'Editar Custo Fixo';
-    document.getElementById('fixed-cost-name').value = cost.name;
-    document.getElementById('fixed-cost-value').value = cost.value;
-    
+    document.getElementById('fixed-cost-name').value  = c.name;
+    document.getElementById('fixed-cost-value').value = c.value;
     showContent('fixed-cost-form-content');
 }
 
-function deleteFixedCost(id) {
-    showDeleteModal(`Tem certeza que deseja excluir este custo fixo?`, () => {
-        appData.fixedCosts = appData.fixedCosts.filter(c => c.id !== id);
-        saveData();
-        updateDashboard();
-        renderFixedCostsList();
-        showToast('Custo fixo excluído com sucesso!', 'success');
+function confirmDeleteFixedCost(id) {
+    showDeleteModal('Tem certeza que deseja excluir este custo fixo?', () => {
+        db.fixedCosts = db.fixedCosts.filter(c => c.id !== id);
+        saveDB();
+        renderFixedCosts();
+        showToast('Custo fixo excluído.', 'warning');
     });
 }
 
-// ===========================
-// RECEITAS
-// ===========================
+// ============================================================
+// RECEITAS — LISTA (Tela 7)
+// ============================================================
+function goToRecipes() {
+    showContent('recipes-content');
+    renderRecipes();
+}
 
+function renderRecipes() {
+    const tbody = document.getElementById('recipes-tbody');
+    tbody.innerHTML = '';
+
+    if (!db.recipes.length) {
+        tbody.innerHTML = `<tr class="empty-row"><td colspan="5"><i class="fas fa-book"></i>Nenhuma receita cadastrada ainda.</td></tr>`;
+        return;
+    }
+
+    db.recipes.forEach(r => {
+        const total = calcRecipeCost(r);
+        const unit  = r.yield > 0 ? total / r.yield : 0;
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td><strong>${r.name}</strong></td>
+            <td>${r.yield} un</td>
+            <td>${fmtBRL(total)}</td>
+            <td>${fmtBRL(unit)}</td>
+            <td>
+                <button class="btn btn-secondary btn-sm" onclick="viewRecipe(${r.id})"><i class="fas fa-eye"></i></button>
+                <button class="btn btn-danger btn-sm"    onclick="confirmDeleteRecipe(${r.id})"><i class="fas fa-trash"></i></button>
+            </td>`;
+        tbody.appendChild(tr);
+    });
+}
+
+// ============================================================
+// RECEITAS — CADASTRO (Tela 8)
+// ============================================================
 document.getElementById('new-recipe-btn').addEventListener('click', () => {
-    appData.editingRecipeId = null;
+    editingRecipeId = null;
     document.getElementById('recipe-form-title').textContent = 'Nova Receita';
     document.getElementById('recipe-form').reset();
     document.getElementById('recipe-ingredients-list').innerHTML = '';
-    addRecipeIngredientField();
+    addIngredientRow();
+    updateRecipePreview();
     showContent('recipe-form-content');
 });
 
-document.getElementById('cancel-recipe-btn').addEventListener('click', () => {
-    showContent('recipes-content');
+document.getElementById('cancel-recipe-btn').addEventListener('click', () => goToRecipes());
+
+document.getElementById('add-ingredient-btn').addEventListener('click', e => {
+    e.preventDefault();
+    addIngredientRow();
 });
 
-function addRecipeIngredientField() {
+function addIngredientRow(selectedId = '', qty = '') {
     const list = document.getElementById('recipe-ingredients-list');
-    const div = document.createElement('div');
-    div.className = 'ingredient-item';
-    div.innerHTML = `
-        <select class="ingredient-select" required>
-            <option value="">Selecione um ingrediente...</option>
-            ${appData.ingredients.map(ing => `<option value="${ing.id}">${ing.name}</option>`).join('')}
-        </select>
-        <input type="number" class="ingredient-quantity" placeholder="Quantidade" step="0.01" required>
-        <button type="button" class="remove-ingredient-btn">
-            <i class="fas fa-trash"></i>
-        </button>
+    const row  = document.createElement('div');
+    row.className = 'ingredient-row';
+
+    const options = db.ingredients.map(ing =>
+        `<option value="${ing.id}" ${ing.id == selectedId ? 'selected' : ''}>
+            ${ing.name} (${fmtBRL(ing.unitCost)}/${unitLabel(ing.unit)})
+         </option>`
+    ).join('');
+
+    row.innerHTML = `
+        <div class="form-group" style="margin:0">
+            <label>Ingrediente</label>
+            <select class="ing-select" required>
+                <option value="">Selecione...</option>
+                ${options}
+            </select>
+        </div>
+        <div class="form-group" style="margin:0">
+            <label class="qty-label">Quantidade</label>
+            <input type="number" class="ing-qty" placeholder="Ex: 200" step="0.001" min="0.001" value="${qty}" required>
+        </div>
+        <div class="row-cost">R$ 0,00</div>
+        <button type="button" class="btn btn-danger btn-sm remove-row-btn"><i class="fas fa-trash"></i></button>
     `;
-    
-    div.querySelector('.remove-ingredient-btn').addEventListener('click', () => {
-        div.remove();
+
+    // Atualizar label da unidade ao selecionar ingrediente
+    const sel = row.querySelector('.ing-select');
+    const lbl = row.querySelector('.qty-label');
+    const costEl = row.querySelector('.row-cost');
+
+    function refreshRow() {
+        const ing = db.ingredients.find(i => i.id == sel.value);
+        if (ing) lbl.textContent = `Quantidade (${unitLabel(ing.unit)})`;
+        else     lbl.textContent = 'Quantidade';
+        updateRowCost(row);
+        updateRecipePreview();
+    }
+
+    sel.addEventListener('change', refreshRow);
+    row.querySelector('.ing-qty').addEventListener('input', () => {
+        updateRowCost(row);
+        updateRecipePreview();
     });
-    
-    list.appendChild(div);
+    row.querySelector('.remove-row-btn').addEventListener('click', () => {
+        row.remove();
+        updateRecipePreview();
+    });
+
+    list.appendChild(row);
+
+    // Se já veio com ingrediente selecionado, atualiza label imediatamente
+    if (selectedId) refreshRow();
 }
 
-document.getElementById('add-ingredient-btn').addEventListener('click', (e) => {
-    e.preventDefault();
-    addRecipeIngredientField();
-});
+function updateRowCost(row) {
+    const sel  = row.querySelector('.ing-select');
+    const qty  = parseFloat(row.querySelector('.ing-qty').value) || 0;
+    const ing  = db.ingredients.find(i => i.id == sel.value);
+    const cost = (ing && qty > 0) ? ing.unitCost * qty : 0;
+    row.querySelector('.row-cost').textContent = fmtBRL(cost);
+}
 
-document.getElementById('recipe-form').addEventListener('submit', (e) => {
-    e.preventDefault();
-    
-    const ingredientItems = document.querySelectorAll('.ingredient-item');
-    const ingredients = [];
-    
-    ingredientItems.forEach(item => {
-        const ingredientId = parseInt(item.querySelector('.ingredient-select').value);
-        const quantity = parseFloat(item.querySelector('.ingredient-quantity').value);
-        
-        if (ingredientId && quantity) {
-            ingredients.push({ ingredientId, quantity });
-        }
+function getRecipeRowsData() {
+    const rows = document.querySelectorAll('#recipe-ingredients-list .ingredient-row');
+    const items = [];
+    rows.forEach(row => {
+        const ingId = parseInt(row.querySelector('.ing-select').value);
+        const qty   = parseFloat(row.querySelector('.ing-qty').value);
+        if (ingId && qty > 0) items.push({ ingredientId: ingId, qty });
     });
-    
-    if (ingredients.length === 0) {
-        showToast('Adicione pelo menos um ingrediente!', 'warning');
-        return;
-    }
-    
+    return items;
+}
+
+function updateRecipePreview() {
+    const items = getRecipeRowsData();
+    const yieldVal = parseInt(document.getElementById('recipe-yield').value) || 0;
+    let total = 0;
+    items.forEach(item => {
+        const ing = db.ingredients.find(i => i.id === item.ingredientId);
+        if (ing) total += ing.unitCost * item.qty;
+    });
+    const unitC = yieldVal > 0 ? total / yieldVal : 0;
+    const sugg  = unitC * 2.5;
+    document.getElementById('preview-total-cost').textContent     = fmtBRL(total);
+    document.getElementById('preview-unit-cost').textContent      = fmtBRL(unitC);
+    document.getElementById('preview-suggested-price').textContent = fmtBRL(sugg);
+}
+
+document.getElementById('recipe-yield').addEventListener('input', updateRecipePreview);
+
+document.getElementById('recipe-form').addEventListener('submit', e => {
+    e.preventDefault();
+    const items = getRecipeRowsData();
+    if (!items.length) { showToast('Adicione pelo menos um ingrediente!', 'warning'); return; }
+
     const recipe = {
-        id: appData.editingRecipeId || Date.now(),
-        name: document.getElementById('recipe-name').value,
-        yield: parseInt(document.getElementById('recipe-yield').value),
-        ingredients: ingredients
+        id:          editingRecipeId || Date.now(),
+        name:        document.getElementById('recipe-name').value.trim(),
+        yield:       parseInt(document.getElementById('recipe-yield').value),
+        ingredients: items,
     };
-    
-    if (appData.editingRecipeId) {
-        const index = appData.recipes.findIndex(r => r.id === appData.editingRecipeId);
-        appData.recipes[index] = recipe;
-        showToast('Receita atualizada com sucesso!', 'success');
+
+    if (editingRecipeId) {
+        const idx = db.recipes.findIndex(r => r.id === editingRecipeId);
+        db.recipes[idx] = recipe;
+        showToast('Receita atualizada!');
     } else {
-        appData.recipes.push(recipe);
-        showToast('Receita adicionada com sucesso!', 'success');
+        db.recipes.push(recipe);
+        showToast('Receita salva!');
     }
-    
-    saveData();
-    updateDashboard();
-    showContent('recipes-content');
-    renderRecipesList();
+
+    saveDB();
+    goToRecipes();
 });
 
-function renderRecipesList() {
-    const tbody = document.getElementById('recipes-tbody');
-    tbody.innerHTML = '';
-    
-    appData.recipes.forEach(recipe => {
-        const cost = calculateRecipeCost(recipe);
-        const row = document.createElement('tr');
-        row.innerHTML = `
-            <td>${recipe.name}</td>
-            <td>${recipe.yield} unidades</td>
-            <td>R$ ${cost.toFixed(2)}</td>
-            <td>
-                <button class="btn btn-secondary btn-sm" onclick="viewRecipeDetails(${recipe.id})">
-                    <i class="fas fa-eye"></i>
-                </button>
-                <button class="btn btn-danger btn-sm" onclick="deleteRecipe(${recipe.id})">
-                    <i class="fas fa-trash"></i>
-                </button>
-            </td>
-        `;
-        tbody.appendChild(row);
-    });
+// ============================================================
+// RECEITAS — CÁLCULO DE CUSTO
+// ============================================================
+function calcRecipeCost(recipe) {
+    return recipe.ingredients.reduce((sum, item) => {
+        const ing = db.ingredients.find(i => i.id === item.ingredientId);
+        return sum + (ing ? ing.unitCost * item.qty : 0);
+    }, 0);
 }
 
-function calculateRecipeCost(recipe) {
-    let totalCost = 0;
-    recipe.ingredients.forEach(item => {
-        const ingredient = appData.ingredients.find(i => i.id === item.ingredientId);
-        if (ingredient) {
-            totalCost += ingredient.price * item.quantity;
-        }
-    });
-    return totalCost;
-}
-
-function viewRecipeDetails(id) {
-    const recipe = appData.recipes.find(r => r.id === id);
+// ============================================================
+// RECEITAS — DETALHES (Tela 9)
+// ============================================================
+function viewRecipe(id) {
+    const recipe = db.recipes.find(r => r.id === id);
     if (!recipe) return;
-    
-    appData.currentRecipeId = id;
-    
+    currentRecipeId = id;
+
     document.getElementById('recipe-details-title').textContent = recipe.name;
-    
-    // Ingredientes
-    const ingredientsDiv = document.getElementById('recipe-ingredients-details');
-    ingredientsDiv.innerHTML = '';
-    
+
+    // Lista de ingredientes
+    const detDiv = document.getElementById('recipe-ingredients-details');
+    detDiv.innerHTML = '';
     recipe.ingredients.forEach(item => {
-        const ingredient = appData.ingredients.find(i => i.id === item.ingredientId);
-        if (ingredient) {
-            const cost = ingredient.price * item.quantity;
-            const div = document.createElement('div');
-            div.className = 'ingredient-detail';
-            div.innerHTML = `
-                <strong>${ingredient.name}</strong>
-                <span>${item.quantity} ${ingredient.unit} - R$ ${cost.toFixed(2)}</span>
-            `;
-            ingredientsDiv.appendChild(div);
-        }
+        const ing  = db.ingredients.find(i => i.id === item.ingredientId);
+        if (!ing) return;
+        const cost = ing.unitCost * item.qty;
+        const div  = document.createElement('div');
+        div.className = 'ingredient-detail';
+        div.innerHTML = `
+            <span class="det-name">${ing.name}</span>
+            <span class="det-qty">${item.qty} ${unitLabel(ing.unit)}</span>
+            <span class="det-cost">${fmtBRL(cost)}</span>`;
+        detDiv.appendChild(div);
     });
-    
-    // Custos
-    const totalCost = calculateRecipeCost(recipe);
-    const unitCost = totalCost / recipe.yield;
-    const suggestedPrice = unitCost * 2.5; // Margem de 150%
-    
-    document.getElementById('recipe-total-cost').textContent = `R$ ${totalCost.toFixed(2)}`;
-    document.getElementById('recipe-unit-cost').textContent = `R$ ${unitCost.toFixed(2)}`;
-    document.getElementById('recipe-suggested-price').textContent = `R$ ${suggestedPrice.toFixed(2)}`;
-    
+
+    // Totais
+    const total = calcRecipeCost(recipe);
+    const unit  = recipe.yield > 0 ? total / recipe.yield : 0;
+    const sugg  = unit * 2.5;
+
+    document.getElementById('recipe-total-cost').textContent      = fmtBRL(total);
+    document.getElementById('recipe-unit-cost').textContent       = fmtBRL(unit);
+    document.getElementById('recipe-suggested-price').textContent = fmtBRL(sugg);
+
     showContent('recipe-details-content');
 }
 
+document.getElementById('back-to-recipes-btn').addEventListener('click', () => goToRecipes());
+
 document.getElementById('edit-recipe-btn').addEventListener('click', () => {
-    const recipe = appData.recipes.find(r => r.id === appData.currentRecipeId);
+    const recipe = db.recipes.find(r => r.id === currentRecipeId);
     if (!recipe) return;
-    
-    appData.editingRecipeId = recipe.id;
+    editingRecipeId = recipe.id;
     document.getElementById('recipe-form-title').textContent = 'Editar Receita';
-    document.getElementById('recipe-name').value = recipe.name;
+    document.getElementById('recipe-name').value  = recipe.name;
     document.getElementById('recipe-yield').value = recipe.yield;
-    
-    const list = document.getElementById('recipe-ingredients-list');
-    list.innerHTML = '';
-    
-    recipe.ingredients.forEach(item => {
-        const div = document.createElement('div');
-        div.className = 'ingredient-item';
-        div.innerHTML = `
-            <select class="ingredient-select" required>
-                <option value="">Selecione um ingrediente...</option>
-                ${appData.ingredients.map(ing => `<option value="${ing.id}" ${ing.id === item.ingredientId ? 'selected' : ''}>${ing.name}</option>`).join('')}
-            </select>
-            <input type="number" class="ingredient-quantity" value="${item.quantity}" step="0.01" required>
-            <button type="button" class="remove-ingredient-btn">
-                <i class="fas fa-trash"></i>
-            </button>
-        `;
-        
-        div.querySelector('.remove-ingredient-btn').addEventListener('click', () => {
-            div.remove();
-        });
-        
-        list.appendChild(div);
-    });
-    
+    document.getElementById('recipe-ingredients-list').innerHTML = '';
+    recipe.ingredients.forEach(item => addIngredientRow(item.ingredientId, item.qty));
+    updateRecipePreview();
     showContent('recipe-form-content');
 });
 
 document.getElementById('delete-recipe-btn').addEventListener('click', () => {
-    showDeleteModal(`Tem certeza que deseja excluir esta receita?`, () => {
-        appData.recipes = appData.recipes.filter(r => r.id !== appData.currentRecipeId);
-        saveData();
-        updateDashboard();
-        showContent('recipes-content');
-        renderRecipesList();
-        showToast('Receita excluída com sucesso!', 'success');
-    });
+    confirmDeleteRecipe(currentRecipeId);
 });
 
-document.getElementById('back-to-recipes-btn').addEventListener('click', () => {
-    showContent('recipes-content');
-});
-
-function deleteRecipe(id) {
-    showDeleteModal(`Tem certeza que deseja excluir esta receita?`, () => {
-        appData.recipes = appData.recipes.filter(r => r.id !== id);
-        saveData();
-        updateDashboard();
-        renderRecipesList();
-        showToast('Receita excluída com sucesso!', 'success');
+function confirmDeleteRecipe(id) {
+    showDeleteModal('Tem certeza que deseja excluir esta receita?', () => {
+        db.recipes = db.recipes.filter(r => r.id !== id);
+        saveDB();
+        goToRecipes();
+        showToast('Receita excluída.', 'warning');
     });
 }
 
-// ===========================
-// CONFIGURAÇÕES
-// ===========================
-
-function updateSettings() {
-    document.getElementById('settings-username').textContent = appData.user.name;
-    document.getElementById('settings-email').textContent = appData.user.email;
+// ============================================================
+// CONFIGURAÇÕES (Tela 10)
+// ============================================================
+function goToSettings() {
+    showContent('settings-content');
+    document.getElementById('settings-username').textContent = db.user?.name  || 'Admin';
+    document.getElementById('settings-email').textContent    = db.user?.email || 'admin@centraldodoce.com';
+    updateThemeButtons();
 }
 
-// Dark Mode / Light Mode
 document.getElementById('light-mode-btn').addEventListener('click', () => {
     document.body.classList.remove('dark-mode');
-    localStorage.setItem('theme', 'light');
+    localStorage.setItem('centralDoDoce_theme', 'light');
     updateThemeButtons();
-    showToast('Tema claro ativado!', 'success');
+    showToast('Tema claro ativado!');
 });
 
 document.getElementById('dark-mode-btn').addEventListener('click', () => {
     document.body.classList.add('dark-mode');
-    localStorage.setItem('theme', 'dark');
+    localStorage.setItem('centralDoDoce_theme', 'dark');
     updateThemeButtons();
-    showToast('Tema escuro ativado!', 'success');
+    showToast('Tema escuro ativado!');
 });
 
 function updateThemeButtons() {
-    const isDark = document.body.classList.contains('dark-mode');
-    document.getElementById('light-mode-btn').classList.toggle('active', !isDark);
-    document.getElementById('dark-mode-btn').classList.toggle('active', isDark);
+    const dark = document.body.classList.contains('dark-mode');
+    document.getElementById('light-mode-btn').classList.toggle('active', !dark);
+    document.getElementById('dark-mode-btn').classList.toggle('active',  dark);
 }
 
 // ViaCEP
-document.getElementById('search-cep-btn').addEventListener('click', () => {
-    const cep = document.getElementById('cep-input').value.replace(/\D/g, '');
-    
-    if (cep.length !== 8) {
-        showToast('CEP inválido!', 'warning');
-        return;
-    }
-    
-    // Simulação de busca ViaCEP
-    const mockAddresses = {
-        '01310100': { rua: 'Avenida Paulista', bairro: 'Bela Vista', cidade: 'São Paulo', estado: 'SP' },
-        '20040020': { rua: 'Avenida Rio Branco', bairro: 'Centro', cidade: 'Rio de Janeiro', estado: 'RJ' },
-        '30130100': { rua: 'Avenida Getúlio Vargas', bairro: 'Funcionários', cidade: 'Belo Horizonte', estado: 'MG' }
-    };
-    
-    const address = mockAddresses[cep] || {
-        rua: 'Rua Exemplo',
-        bairro: 'Bairro Exemplo',
-        cidade: 'Cidade Exemplo',
-        estado: 'EX'
-    };
-    
-    const addressDiv = document.getElementById('address-info');
-    addressDiv.innerHTML = `
-        <p><strong>Rua:</strong> ${address.rua}</p>
-        <p><strong>Bairro:</strong> ${address.bairro}</p>
-        <p><strong>Cidade:</strong> ${address.cidade}</p>
-        <p><strong>Estado:</strong> ${address.estado}</p>
-    `;
-    addressDiv.classList.add('show');
-    
-    showToast('Endereço encontrado!', 'success');
+document.getElementById('cep-input').addEventListener('input', function() {
+    let v = this.value.replace(/\D/g, '');
+    if (v.length > 5) v = v.slice(0,5) + '-' + v.slice(5,8);
+    this.value = v;
 });
 
-// ===========================
-// MODAIS E NOTIFICAÇÕES
-// ===========================
+document.getElementById('search-cep-btn').addEventListener('click', () => {
+    const cep = document.getElementById('cep-input').value.replace(/\D/g, '');
+    if (cep.length !== 8) { showToast('CEP inválido!', 'warning'); return; }
 
-function showDeleteModal(message, onConfirm) {
-    document.getElementById('delete-message').textContent = message;
-    document.getElementById('delete-modal').classList.add('active');
-    
-    document.getElementById('confirm-delete-btn').onclick = () => {
-        onConfirm();
-        document.getElementById('delete-modal').classList.remove('active');
-    };
-}
+    const addrDiv = document.getElementById('address-info');
+    addrDiv.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Buscando...';
+    addrDiv.classList.add('show');
+
+    fetch(`https://viacep.com.br/ws/${cep}/json/`)
+        .then(r => r.json())
+        .then(data => {
+            if (data.erro) {
+                addrDiv.innerHTML = '<strong>CEP não encontrado.</strong>';
+                showToast('CEP não encontrado!', 'error');
+            } else {
+                addrDiv.innerHTML = `
+                    <p><strong>Rua:</strong> ${data.logradouro || '—'}</p>
+                    <p><strong>Bairro:</strong> ${data.bairro || '—'}</p>
+                    <p><strong>Cidade:</strong> ${data.localidade || '—'}</p>
+                    <p><strong>Estado:</strong> ${data.uf || '—'}</p>`;
+                showToast('Endereço encontrado!');
+            }
+        })
+        .catch(() => {
+            // Fallback simulado
+            addrDiv.innerHTML = `
+                <p><strong>Rua:</strong> Rua Exemplo</p>
+                <p><strong>Bairro:</strong> Centro</p>
+                <p><strong>Cidade:</strong> Cidade Exemplo</p>
+                <p><strong>Estado:</strong> SP</p>`;
+            showToast('Endereço carregado (simulado).', 'warning');
+        });
+});
+
+// ============================================================
+// MODAL DE EXCLUSÃO
+// ============================================================
+document.getElementById('confirm-delete-btn').addEventListener('click', () => {
+    if (pendingDeleteFn) { pendingDeleteFn(); pendingDeleteFn = null; }
+    document.getElementById('delete-modal').classList.remove('active');
+});
 
 document.getElementById('cancel-delete-btn').addEventListener('click', () => {
+    pendingDeleteFn = null;
     document.getElementById('delete-modal').classList.remove('active');
 });
 
 document.querySelectorAll('.modal-close').forEach(btn => {
     btn.addEventListener('click', () => {
+        pendingDeleteFn = null;
         document.getElementById('delete-modal').classList.remove('active');
     });
 });
 
-function showToast(message, type = 'info') {
-    const container = document.getElementById('toast-container');
-    const toast = document.createElement('div');
-    toast.className = `toast ${type}`;
-    
-    const icons = {
-        success: 'fa-check-circle',
-        error: 'fa-exclamation-circle',
-        warning: 'fa-exclamation-triangle',
-        info: 'fa-info-circle'
-    };
-    
-    toast.innerHTML = `
-        <i class="fas ${icons[type]}"></i>
-        <span>${message}</span>
-    `;
-    
-    container.appendChild(toast);
-    
-    setTimeout(() => {
-        toast.style.animation = 'slideInRight 0.3s reverse';
-        setTimeout(() => toast.remove(), 300);
-    }, 3000);
-}
-
-// ===========================
+// ============================================================
 // INICIALIZAÇÃO
-// ===========================
-
+// ============================================================
 document.addEventListener('DOMContentLoaded', () => {
-    loadData();
+    loadDB();
     loadTheme();
-    updateThemeButtons();
-    
-    // Adicionar alguns dados de exemplo
-    if (appData.ingredients.length === 0) {
-        appData.ingredients = [
-            { id: 1, name: 'Farinha de Trigo', brand: 'Integral', unit: 'kg', price: 8.50, supplier: 'Fornecedor A' },
-            { id: 2, name: 'Açúcar Cristal', brand: 'União', unit: 'kg', price: 4.20, supplier: 'Fornecedor B' },
-            { id: 3, name: 'Ovos', brand: 'Granja X', unit: 'dúzia', price: 12.00, supplier: 'Fornecedor C' },
-            { id: 4, name: 'Manteiga', brand: 'Aviação', unit: 'kg', price: 35.00, supplier: 'Fornecedor A' }
+
+    // Dados de exemplo (apenas na primeira vez)
+    if (!db.ingredients.length) {
+        db.ingredients = [
+            { id: 1, name: 'Farinha de Trigo',  brand: 'Dona Benta', pkgQty: 1000, unit: 'g',  pkgPrice: 8.50,  unitCost: 0.0085,  supplier: 'Mercado Central' },
+            { id: 2, name: 'Açúcar Cristal',    brand: 'União',      pkgQty: 1000, unit: 'g',  pkgPrice: 4.20,  unitCost: 0.0042,  supplier: 'Atacadão' },
+            { id: 3, name: 'Ovos',              brand: 'Granja Sol', pkgQty: 12,   unit: 'un', pkgPrice: 12.00, unitCost: 1.0,     supplier: 'Feira Livre' },
+            { id: 4, name: 'Manteiga',          brand: 'Aviação',    pkgQty: 200,  unit: 'g',  pkgPrice: 9.50,  unitCost: 0.0475,  supplier: 'Mercado Central' },
+            { id: 5, name: 'Leite Integral',    brand: 'Italac',     pkgQty: 1000, unit: 'ml', pkgPrice: 5.80,  unitCost: 0.0058,  supplier: 'Mercado Central' },
+            { id: 6, name: 'Chocolate em Pó',   brand: 'Nestlé',     pkgQty: 200,  unit: 'g',  pkgPrice: 7.90,  unitCost: 0.0395,  supplier: 'Atacadão' },
         ];
-        saveData();
+        saveDB();
     }
 });
