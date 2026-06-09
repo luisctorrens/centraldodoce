@@ -1,19 +1,4 @@
-// ============================================================
-// CENTRAL DO DOCE — script.js
-// ============================================================
-// MODELO DE INGREDIENTE:
-//   id, name, brand, pkgQty (qtd na embalagem), unit (g/kg/ml/l/un/dz),
-//   pkgPrice (preço da embalagem), unitCost (pkgPrice / pkgQty),
-//   supplier
-//
-// MODELO DE ITEM DE RECEITA:
-//   ingredientId, qty (quantidade usada, na mesma unidade do ingrediente)
-//   custo do item = ingredient.unitCost × qty
-// ============================================================
 
-// ============================================================
-// ESTADO GLOBAL
-// ============================================================
 let db = {
     user:         null,
     ingredients:  [],
@@ -27,13 +12,10 @@ let editingRecipeId     = null;
 let currentRecipeId     = null;
 let pendingDeleteFn     = null;
 
-// ============================================================
-// PERSISTÊNCIA
-// ============================================================
 function loadDB() {
     const raw = localStorage.getItem('centralDoDoce_v2');
     if (raw) {
-        try { db = JSON.parse(raw); } catch(e) { /* ignora */ }
+        try { db = JSON.parse(raw); } catch(e) {  }
     }
 }
 
@@ -47,9 +29,6 @@ function loadTheme() {
     updateThemeButtons();
 }
 
-// ============================================================
-// NAVEGAÇÃO
-// ============================================================
 function showScreen(id) {
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
     document.getElementById(id).classList.add('active');
@@ -66,9 +45,6 @@ function setActiveNav(screen) {
     if (el) el.classList.add('active');
 }
 
-// ============================================================
-// UTILITÁRIOS
-// ============================================================
 function fmtBRL(value) {
     return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
@@ -109,9 +85,6 @@ function applyTableCellLabels(tableSelector) {
     });
 }
 
-// ============================================================
-// LOGIN
-// ============================================================
 document.getElementById('login-form').addEventListener('submit', e => {
     e.preventDefault();
     const u = document.getElementById('username').value.trim();
@@ -151,9 +124,6 @@ document.getElementById('logout-btn').addEventListener('click', e => {
     showToast('Sessão encerrada.', 'warning');
 });
 
-// ============================================================
-// MENU LATERAL
-// ============================================================
 document.querySelectorAll('.nav-item[data-screen]').forEach(item => {
     item.addEventListener('click', e => {
         e.preventDefault();
@@ -201,9 +171,6 @@ document.addEventListener('click', e => {
     closeSidebar();
 });
 
-// ============================================================
-// DASHBOARD
-// ============================================================
 function goToDashboard() {
     showContent('dashboard-content');
     setActiveNav('dashboard');
@@ -220,9 +187,6 @@ function goToDashboard() {
     document.getElementById('avg-recipe-cost').textContent = fmtBRL(avg);
 }
 
-// ============================================================
-// INGREDIENTES — LISTA (Tela 3)
-// ============================================================
 function goToIngredients() {
     showContent('ingredients-content');
     renderIngredients();
@@ -255,9 +219,6 @@ function renderIngredients() {
     applyTableCellLabels('#ingredients-content .data-table');
 }
 
-// ============================================================
-// INGREDIENTES — CADASTRO (Tela 4)
-// ============================================================
 document.getElementById('new-ingredient-btn').addEventListener('click', () => {
     editingIngredientId = null;
     document.getElementById('ingredient-form-title').textContent = 'Novo Ingrediente';
@@ -269,7 +230,6 @@ document.getElementById('new-ingredient-btn').addEventListener('click', () => {
 
 document.getElementById('cancel-ingredient-btn').addEventListener('click', () => goToIngredients());
 
-// Cálculo em tempo real do custo por unidade
 ['ingredient-pkg-qty', 'ingredient-price'].forEach(id => {
     document.getElementById(id).addEventListener('input', updateUnitCostPreview);
 });
@@ -352,7 +312,6 @@ function confirmDeleteIngredient(id) {
     });
 }
 
-// Pesquisa de produto (API Ninjas simulada)
 document.getElementById('search-product-btn').addEventListener('click', () => {
     const term = document.getElementById('product-search').value.trim();
     if (!term) { showToast('Digite um nome de produto!', 'warning'); return; }
@@ -383,9 +342,6 @@ document.getElementById('search-product-btn').addEventListener('click', () => {
     showToast('Resultados simulados carregados!');
 });
 
-// ============================================================
-// CUSTOS FIXOS — LISTA (Tela 5)
-// ============================================================
 function goToFixedCosts() {
     showContent('fixed-costs-content');
     renderFixedCosts();
@@ -414,9 +370,6 @@ function renderFixedCosts() {
     applyTableCellLabels('#fixed-costs-content .data-table');
 }
 
-// ============================================================
-// CUSTOS FIXOS — CADASTRO (Tela 6)
-// ============================================================
 document.getElementById('new-fixed-cost-btn').addEventListener('click', () => {
     editingFixedCostId = null;
     document.getElementById('fixed-cost-form-title').textContent = 'Novo Custo Fixo';
@@ -464,9 +417,6 @@ function confirmDeleteFixedCost(id) {
     });
 }
 
-// ============================================================
-// RECEITAS — LISTA (Tela 7)
-// ============================================================
 function goToRecipes() {
     showContent('recipes-content');
     renderRecipes();
@@ -499,9 +449,6 @@ function renderRecipes() {
     applyTableCellLabels('#recipes-content .data-table');
 }
 
-// ============================================================
-// RECEITAS — CADASTRO (Tela 8)
-// ============================================================
 document.getElementById('new-recipe-btn').addEventListener('click', () => {
     editingRecipeId = null;
     document.getElementById('recipe-form-title').textContent = 'Nova Receita';
@@ -546,7 +493,6 @@ function addIngredientRow(selectedId = '', qty = '') {
         <button type="button" class="btn btn-danger btn-sm remove-row-btn"><i class="fas fa-trash"></i></button>
     `;
 
-    // Atualizar label da unidade ao selecionar ingrediente
     const sel = row.querySelector('.ing-select');
     const lbl = row.querySelector('.qty-label');
     const costEl = row.querySelector('.row-cost');
@@ -571,7 +517,6 @@ function addIngredientRow(selectedId = '', qty = '') {
 
     list.appendChild(row);
 
-    // Se já veio com ingrediente selecionado, atualiza label imediatamente
     if (selectedId) refreshRow();
 }
 
@@ -636,9 +581,6 @@ document.getElementById('recipe-form').addEventListener('submit', e => {
     goToRecipes();
 });
 
-// ============================================================
-// RECEITAS — CÁLCULO DE CUSTO
-// ============================================================
 function calcRecipeCost(recipe) {
     return recipe.ingredients.reduce((sum, item) => {
         const ing = db.ingredients.find(i => i.id === item.ingredientId);
@@ -646,9 +588,6 @@ function calcRecipeCost(recipe) {
     }, 0);
 }
 
-// ============================================================
-// RECEITAS — DETALHES (Tela 9)
-// ============================================================
 function viewRecipe(id) {
     const recipe = db.recipes.find(r => r.id === id);
     if (!recipe) return;
@@ -656,7 +595,6 @@ function viewRecipe(id) {
 
     document.getElementById('recipe-details-title').textContent = recipe.name;
 
-    // Lista de ingredientes
     const detDiv = document.getElementById('recipe-ingredients-details');
     detDiv.innerHTML = '';
     recipe.ingredients.forEach(item => {
@@ -672,7 +610,6 @@ function viewRecipe(id) {
         detDiv.appendChild(div);
     });
 
-    // Totais
     const total = calcRecipeCost(recipe);
     const unit  = recipe.yield > 0 ? total / recipe.yield : 0;
     const sugg  = unit * 2.5;
@@ -712,9 +649,6 @@ function confirmDeleteRecipe(id) {
     });
 }
 
-// ============================================================
-// CONFIGURAÇÕES (Tela 10)
-// ============================================================
 function goToSettings() {
     showContent('settings-content');
     document.getElementById('settings-username').textContent = db.user?.name  || 'Admin';
@@ -742,7 +676,6 @@ function updateThemeButtons() {
     document.getElementById('dark-mode-btn').classList.toggle('active',  dark);
 }
 
-// ViaCEP
 document.getElementById('cep-input').addEventListener('input', function() {
     let v = this.value.replace(/\D/g, '');
     if (v.length > 5) v = v.slice(0,5) + '-' + v.slice(5,8);
@@ -773,7 +706,6 @@ document.getElementById('search-cep-btn').addEventListener('click', () => {
             }
         })
         .catch(() => {
-            // Fallback simulado
             addrDiv.innerHTML = `
                 <p><strong>Rua:</strong> Rua Exemplo</p>
                 <p><strong>Bairro:</strong> Centro</p>
@@ -783,9 +715,6 @@ document.getElementById('search-cep-btn').addEventListener('click', () => {
         });
 });
 
-// ============================================================
-// MODAL DE EXCLUSÃO
-// ============================================================
 document.getElementById('confirm-delete-btn').addEventListener('click', () => {
     if (pendingDeleteFn) { pendingDeleteFn(); pendingDeleteFn = null; }
     document.getElementById('delete-modal').classList.remove('active');
@@ -803,14 +732,10 @@ document.querySelectorAll('.modal-close').forEach(btn => {
     });
 });
 
-// ============================================================
-// INICIALIZAÇÃO
-// ============================================================
 document.addEventListener('DOMContentLoaded', () => {
     loadDB();
     loadTheme();
 
-    // Dados de exemplo (apenas na primeira vez)
     if (!db.ingredients.length) {
         db.ingredients = [
             { id: 1, name: 'Farinha de Trigo',  brand: 'Dona Benta', pkgQty: 1000, unit: 'g',  pkgPrice: 8.50,  unitCost: 0.0085,  supplier: 'Mercado Central' },

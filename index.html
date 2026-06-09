@@ -9,7 +9,7 @@
 </head>
 <body>
 
-    <!-- ===================== TELA 1: LOGIN ===================== -->
+
     <div id="login-screen" class="screen active">
         <div class="login-container">
             <div class="login-box">
@@ -47,10 +47,10 @@
         </div>
     </div>
 
-    <!-- ===================== TELA PRINCIPAL (pós-login) ===================== -->
+
     <div id="dashboard-screen" class="screen">
 
-        <!-- SIDEBAR -->
+
         <aside class="sidebar" id="sidebar">
             <div class="sidebar-header">
                 <i class="fas fa-birthday-cake"></i>
@@ -66,7 +66,7 @@
             </nav>
         </aside>
 
-        <!-- CONTEÚDO PRINCIPAL -->
+
         <div class="main-content">
             <header class="top-bar">
                 <button id="menu-toggle" class="menu-toggle" aria-label="Abrir menu" aria-expanded="false"><i class="fas fa-bars"></i></button>
@@ -76,7 +76,7 @@
                 </div>
             </header>
 
-            <!-- ===== TELA 2: DASHBOARD ===== -->
+
             <div id="dashboard-content" class="content-section active-content">
                 <div class="page-header">
                     <div>
@@ -122,7 +122,7 @@
                 </div>
             </div>
 
-            <!-- ===== TELA 3: LISTA DE INGREDIENTES ===== -->
+
             <div id="ingredients-content" class="content-section">
                 <div class="page-header">
                     <h1>Ingredientes</h1>
@@ -148,7 +148,7 @@
                 </div>
             </div>
 
-            <!-- ===== TELA 4: CADASTRO DE INGREDIENTE ===== -->
+
             <div id="ingredient-form-content" class="content-section">
                 <div class="page-header">
                     <h1 id="ingredient-form-title">Novo Ingrediente</h1>
@@ -166,7 +166,7 @@
                             </div>
                         </div>
 
-                        <!-- Bloco de embalagem -->
+
                         <fieldset class="fieldset-embalagem">
                             <legend><i class="fas fa-box-open"></i> Dados da Embalagem</legend>
                             <div class="form-row">
@@ -211,7 +211,7 @@
                             </div>
                         </div>
 
-                        <!-- Pesquisa de produto (API Ninjas simulada) -->
+
                         <div class="form-group">
                             <label for="product-search">Pesquisar Produto <span class="badge-api">API Ninjas</span></label>
                             <div class="search-wrapper">
@@ -235,7 +235,7 @@
                 </div>
             </div>
 
-            <!-- ===== TELA 5: LISTA DE CUSTOS FIXOS ===== -->
+
             <div id="fixed-costs-content" class="content-section">
                 <div class="page-header">
                     <h1>Custos Fixos</h1>
@@ -257,7 +257,7 @@
                 </div>
             </div>
 
-            <!-- ===== TELA 6: CADASTRO DE CUSTOS FIXOS ===== -->
+
             <div id="fixed-cost-form-content" class="content-section">
                 <div class="page-header">
                     <h1 id="fixed-cost-form-title">Novo Custo Fixo</h1>
@@ -284,7 +284,7 @@
                 </div>
             </div>
 
-            <!-- ===== TELA 7: LISTA DE RECEITAS ===== -->
+
             <div id="recipes-content" class="content-section">
                 <div class="page-header">
                     <h1>Receitas</h1>
@@ -308,7 +308,7 @@
                 </div>
             </div>
 
-            <!-- ===== TELA 8: CADASTRO DE RECEITA ===== -->
+
             <div id="recipe-form-content" class="content-section">
                 <div class="page-header">
                     <h1 id="recipe-form-title">Nova Receita</h1>
@@ -334,7 +334,7 @@
                             </button>
                         </div>
 
-                        <!-- Prévia de custo em tempo real -->
+
                         <div class="recipe-cost-preview" id="recipe-cost-preview">
                             <div class="preview-item">
                                 <span>Custo Total Estimado</span>
@@ -362,7 +362,7 @@
                 </div>
             </div>
 
-            <!-- ===== TELA 9: DETALHES DA RECEITA ===== -->
+
             <div id="recipe-details-content" class="content-section">
                 <div class="page-header">
                     <h1 id="recipe-details-title">Detalhes da Receita</h1>
@@ -400,7 +400,7 @@
                 </div>
             </div>
 
-            <!-- ===== TELA 10: CONFIGURAÇÕES ===== -->
+
             <div id="settings-content" class="content-section">
                 <div class="page-header">
                     <h1>Configurações</h1>
@@ -449,10 +449,10 @@
                 </div>
             </div>
 
-        </div><!-- /main-content -->
-    </div><!-- /dashboard-screen -->
+        </div>
+    </div>
 
-    <!-- ===================== MODAL DE EXCLUSÃO ===================== -->
+
     <div id="delete-modal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
@@ -473,7 +473,7 @@
         </div>
     </div>
 
-    <!-- ===================== TOAST ===================== -->
+
     <div id="toast-container" class="toast-container" aria-live="polite" aria-atomic="true"></div>
 
     <script src="script.js"></script>

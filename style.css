@@ -1,6 +1,4 @@
-/* ===========================
-   VARIÁVEIS E RESET
-   =========================== */
+
 :root {
     --primary:       #e8a8d8;
     --primary-dark:  #b84d9f;
@@ -62,9 +60,7 @@ svg {
     height: auto;
 }
 
-/* ===========================
-   TELAS
-   =========================== */
+
 .screen {
     display: none;
     min-height: 100vh;
@@ -73,9 +69,7 @@ svg {
 }
 .screen.active { display: flex; }
 
-/* ===========================
-   LOGIN
-   =========================== */
+
 .login-container {
     display: flex;
     justify-content: center;
@@ -130,9 +124,7 @@ svg {
     color: var(--text-muted);
 }
 
-/* ===========================
-   INPUTS GENÉRICOS
-   =========================== */
+
 .form-group { display: flex; flex-direction: column; gap: 6px; }
 .form-group label { font-weight: 600; font-size: 13px; color: var(--text); }
 
@@ -185,9 +177,7 @@ textarea:focus-visible {
     outline-offset: 2px;
 }
 
-/* ===========================
-   LAYOUT PRINCIPAL
-   =========================== */
+
 #dashboard-screen.active { display: flex; overflow: hidden; }
 
 .sidebar {
@@ -264,9 +254,7 @@ textarea:focus-visible {
 }
 .top-bar-right i { font-size: 26px; color: var(--primary-dark); }
 
-/* ===========================
-   SEÇÕES DE CONTEÚDO
-   =========================== */
+
 .content-section {
     display: none;
     flex: 1;
@@ -287,9 +275,7 @@ textarea:focus-visible {
 .page-header h1 { font-size: 26px; color: var(--text); }
 .page-header p  { color: var(--text-muted); font-size: 13px; margin-top: 2px; }
 
-/* ===========================
-   DASHBOARD CARDS
-   =========================== */
+
 .dashboard-cards {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
@@ -342,9 +328,7 @@ textarea:focus-visible {
 .stat-box h4 { font-size: 13px; color: var(--text-muted); margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
 .stat-box p  { font-size: 22px; font-weight: 700; color: var(--primary-dark); }
 
-/* ===========================
-   TABELAS
-   =========================== */
+
 .table-container {
     background: var(--surface);
     border-radius: var(--radius);
@@ -370,9 +354,7 @@ textarea:focus-visible {
 }
 .empty-row i { font-size: 32px; display: block; margin-bottom: 10px; color: var(--primary); }
 
-/* ===========================
-   BOTÕES
-   =========================== */
+
 .btn {
     display: inline-flex; align-items: center; gap: 7px;
     padding: 10px 20px;
@@ -392,9 +374,7 @@ textarea:focus-visible {
 .theme-btn:active,
 .nav-item:active { transform: translateY(0); }
 
-/* ===========================
-   FORMULÁRIOS
-   =========================== */
+
 .form-container {
     background: var(--surface);
     border-radius: var(--radius);
@@ -410,9 +390,7 @@ textarea:focus-visible {
 .form-actions { display: flex; gap: 12px; margin-top: 28px; }
 .form-actions .btn { flex: 1; justify-content: center; }
 
-/* ===========================
-   FIELDSET EMBALAGEM
-   =========================== */
+
 .fieldset-embalagem {
     border: 2px solid var(--primary);
     border-radius: var(--radius);
@@ -452,9 +430,7 @@ textarea:focus-visible {
     vertical-align: middle;
 }
 
-/* ===========================
-   PESQUISA DE PRODUTO
-   =========================== */
+
 .search-wrapper { display: flex; gap: 10px; }
 .search-wrapper input { flex: 1; }
 
@@ -481,9 +457,7 @@ body.dark-mode .btn-secondary:hover {
     color: var(--text);
 }
 
-/* ===========================
-   INGREDIENTES NA RECEITA
-   =========================== */
+
 .ingredients-list { display: flex; flex-direction: column; gap: 12px; margin-bottom: 14px; }
 
 .ingredient-row {
@@ -510,7 +484,7 @@ body.dark-mode .btn-secondary:hover {
 
 .btn-add-ing { align-self: flex-start; }
 
-/* Prévia de custo na receita */
+
 .recipe-cost-preview {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -526,9 +500,7 @@ body.dark-mode .btn-secondary:hover {
 .preview-item strong { font-size: 18px; color: var(--primary-dark); font-weight: 700; }
 .preview-item.highlight strong { font-size: 22px; color: var(--accent); }
 
-/* ===========================
-   DETALHES DA RECEITA
-   =========================== */
+
 .recipe-details-grid {
     display: grid;
     grid-template-columns: 1fr 280px;
@@ -579,9 +551,7 @@ body.dark-mode .btn-secondary:hover {
 .recipe-detail-actions { display: flex; flex-direction: column; gap: 10px; margin-top: 4px; }
 .recipe-detail-actions .btn { justify-content: center; }
 
-/* ===========================
-   CONFIGURAÇÕES
-   =========================== */
+
 .settings-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 24px; }
 .settings-section { background: var(--surface); border-radius: var(--radius); padding: 24px; box-shadow: var(--shadow-sm); }
 .settings-section h3 { margin-bottom: 18px; font-size: 16px; color: var(--text); display: flex; align-items: center; gap: 8px; }
@@ -612,9 +582,7 @@ body.dark-mode .btn-secondary:hover {
 }
 .theme-btn.active { background: var(--primary-dark); color: #fff; border-color: var(--primary-dark); }
 
-/* ===========================
-   MODAL
-   =========================== */
+
 .modal {
     display: none; position: fixed; inset: 0;
     background: rgba(0,0,0,.45); z-index: 1000;
@@ -640,9 +608,7 @@ body.dark-mode .btn-secondary:hover {
 .modal-footer { display: flex; gap: 10px; padding: 16px 22px; border-top: 1px solid var(--border); }
 .modal-footer .btn { flex: 1; justify-content: center; }
 
-/* ===========================
-   TOAST
-   =========================== */
+
 .toast-container {
     position: fixed; top: 20px; right: 20px; z-index: 2000;
     display: flex; flex-direction: column; gap: 10px;
@@ -685,9 +651,7 @@ body.dark-mode .empty-row i {
     color: #f0a6dc;
 }
 
-/* ===========================
-   RESPONSIVIDADE
-   =========================== */
+
 @media (max-width: 768px) {
     .sidebar {
         position: fixed; left: 0; top: 0; height: 100vh;
